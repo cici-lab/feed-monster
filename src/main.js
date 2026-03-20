@@ -55,6 +55,10 @@ scene('game', () => {
     if (updateMonsterPosition) {
       updateMonsterPosition(width() / 2, height() / 2 + 100);
     }
+    // 更新全屏按钮位置
+    if (ui && ui.updateFullscreenBtnPos) {
+      ui.updateFullscreenBtnPos();
+    }
   });
 
   // 定时生成食物

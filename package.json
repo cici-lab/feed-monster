@@ -4,10 +4,11 @@
   "description": "一个投喂小怪物的互动游戏",
   "main": "electron/main.js",
   "scripts": {
+    "start": "concurrently --kill-others \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "dev": "vite",
     "build": "vite build",
     "electron": "electron .",
-    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:dev": "concurrently --kill-others \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:build": "vite build && electron-builder"
   },
   "keywords": ["game", "kaplay", "electron"],

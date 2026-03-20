@@ -21,22 +21,45 @@ let trailPoints = [];
 
 // 检查是否点击了全屏按钮区域
 function isClickOnFullscreenBtn(mouse) {
+  // 始终使用当前窗口尺寸计算按钮位置
   const btnX = width() - 120;
   const btnY = 20;
   return mouse.x >= btnX && mouse.x <= btnX + 100 && mouse.y >= btnY && mouse.y <= btnY + 36;
 }
 
 // 处理全屏按钮点击
-function handleFullscreenClick() {
+async function handleFullscreenClick() {
   const uiRefs = getUIRefs();
   if (!uiRefs) return;
   
-  if (isFullscreen()) {
-    setFullscreen(false);
-    uiRefs.fullscreenText.text = '全屏';
+  // 强制重置拖拽状态，避免状态残留
+  if (isDragging) {
+    isDragging = false;
+    if (draggedFood && draggedFood.exists()) {
+      draggedFood.opacity = 1;
+      draggedFood.scale = vec2(1);
+    }
+    draggedFood = null;
+    dragPositions = [];
+  }
+  
+  // 使用 Electron 的全屏 API
+  let isFull;
+  if (window.electronAPI) {
+    isFull = await window.electronAPI.toggleFullscreen();
   } else {
-    setFullscreen(true);
-    uiRefs.fullscreenText.text = '退出全屏';
+    // 如果不是 Electron 环境，回退到浏览器全屏
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+      isFull = false;
+    } else {
+      document.documentElement.requestFullscreen();
+      isFull = true;
+    }
+  }
+  
+  if (uiRefs && uiRefs.fullscreenText) {
+    uiRefs.fullscreenText.text = isFull ? '退出全屏' : '全屏';
   }
 }
 

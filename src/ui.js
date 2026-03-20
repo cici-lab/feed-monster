@@ -89,6 +89,13 @@ export function createUI(state) {
     fixed(),
   ]);
   
+  // 每帧更新全屏按钮位置
+  onUpdate(() => {
+    if (fullscreenBtnBg && fullscreenBtnBg.exists()) {
+      fullscreenBtnBg.pos.x = width() - 120;
+    }
+  });
+  
   // 全屏按钮文字
   const fullscreenText = fullscreenBtnBg.add([
     text('全屏', { size: 16 }),
@@ -135,6 +142,13 @@ export function createUI(state) {
     }
   }
 
+  // 更新全屏按钮位置（窗口大小变化时调用）
+  function updateFullscreenBtnPos() {
+    if (fullscreenBtnBg) {
+      fullscreenBtnBg.pos.x = width() - 120;
+    }
+  }
+
   // 保存引用
   uiRefs = {
     updateScore,
@@ -142,6 +156,7 @@ export function createUI(state) {
     updateCombo,
     fullscreenBtnBg,
     fullscreenText,
+    updateFullscreenBtnPos,
   };
 
   return uiRefs;
@@ -153,12 +168,23 @@ export function getUIRefs() {
 }
 
 // ESC 键退出全屏
-export function initFullscreenControls() {
-  onKeyPress('escape', () => {
-    if (isFullscreen()) {
-      setFullscreen(false);
-      if (uiRefs && uiRefs.fullscreenText) {
-        uiRefs.fullscreenText.text = '全屏';
+export async function initFullscreenControls() {
+  onKeyPress('escape', async () => {
+    let isFull;
+    if (window.electronAPI) {
+      isFull = await window.electronAPI.isFullscreen();
+      if (isFull) {
+        await window.electronAPI.toggleFullscreen();
+        if (uiRefs && uiRefs.fullscreenText) {
+          uiRefs.fullscreenText.text = '全屏';
+        }
+      }
+    } else {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+        if (uiRefs && uiRefs.fullscreenText) {
+          uiRefs.fullscreenText.text = '全屏';
+        }
       }
     }
   });

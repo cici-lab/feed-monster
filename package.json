@@ -1,0 +1,26 @@
+{
+  "name": "monster-feeder",
+  "version": "1.0.0",
+  "description": "一个投喂小怪物的互动游戏",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "electron": "electron .",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "vite build && electron-builder"
+  },
+  "keywords": ["game", "kaplay", "electron"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "kaplay": "^3001.0.0-alpha.21"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0",
+    "electron": "^32.0.0",
+    "electron-builder": "^25.0.0",
+    "concurrently": "^8.2.0",
+    "wait-on": "^7.2.0"
+  }
+}

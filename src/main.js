@@ -4,6 +4,10 @@ import { createFood, FOOD_TYPES, initFoodSystem } from './food.js';
 import { createUI, initFullscreenControls } from './ui.js';
 import { initDragSystem } from './drag.js';
 import { gameState } from './state.js';
+import { createForge } from './forge.js';
+import { initRecipeSystem } from './recipes.js';
+import { initEncyclopediaSystem } from './encyclopedia.js';
+import { initRecipePanelSystem } from './recipePanel.js';
 
 // 初始化 Kaplay 游戏引擎
 kaplay({
@@ -12,6 +16,7 @@ kaplay({
   height: 800,
   background: [26, 26, 46],
   debug: true,
+  global: true, // 启用全局函数
   stretch: true, // 自适应屏幕
   letterbox: false, // 不留黑边
   buttons: {},
@@ -34,16 +39,28 @@ scene('game', () => {
 
   // 创建怪物 - 始终在屏幕中间
   const monster = createMonster(width() / 2, height() / 2 + 100);
-  
+
+  // 初始化配方系统
+  initRecipeSystem();
+
+  // 创建合成炉
+  const forge = createForge();
+
   // 初始化食物系统
   const foodManager = initFoodSystem(monster, gameState);
-  
+
   // 初始化拖拽系统
   const dragSystem = initDragSystem(monster, gameState);
-  
+
   // 创建UI
   const ui = createUI(gameState);
-  
+
+  // 初始化图鉴系统
+  initEncyclopediaSystem();
+
+  // 初始化配方面板系统
+  initRecipePanelSystem();
+
   // 初始化全屏控制
   initFullscreenControls();
 

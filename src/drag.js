@@ -29,6 +29,25 @@ function isClickOnFullscreenBtn(mouse) {
   return mouse.x >= btnX && mouse.x <= btnX + 100 && mouse.y >= btnY && mouse.y <= btnY + 36;
 }
 
+// 检查是否点击了图鉴按钮区域
+function isClickOnEncyclopediaBtn(mouse) {
+  const btnX = width() - 130;
+  const btnY = 70;
+  return mouse.x >= btnX && mouse.x <= btnX + 100 && mouse.y >= btnY && mouse.y <= btnY + 36;
+}
+
+// 检查是否点击了配方按钮区域
+function isClickOnRecipeBtn(mouse) {
+  const btnX = width() - 130;
+  const btnY = 110;
+  return mouse.x >= btnX && mouse.x <= btnX + 100 && mouse.y >= btnY && mouse.y <= btnY + 36;
+}
+
+// 检查是否点击了UI按钮区域（全屏、图鉴、配方）
+function isClickOnAnyUIButton(mouse) {
+  return isClickOnFullscreenBtn(mouse) || isClickOnEncyclopediaBtn(mouse) || isClickOnRecipeBtn(mouse);
+}
+
 // 处理全屏按钮点击
 async function handleFullscreenClick() {
   const uiRefs = getUIRefs();
@@ -70,10 +89,12 @@ export function initDragSystem(monster, state) {
   onMousePress('left', () => {
     const mouse = mousePos();
 
-    // 先检查是否点击了全屏按钮
-    if (isClickOnFullscreenBtn(mouse)) {
-      handleFullscreenClick();
-      return; // 不处理食物拖拽
+    // 先检查是否点击了UI按钮区域（全屏、图鉴、配方）
+    if (isClickOnAnyUIButton(mouse)) {
+      if (isClickOnFullscreenBtn(mouse)) {
+        handleFullscreenClick();
+      }
+      return; // 不处理食物拖拽，让按钮的 onClick 处理
     }
 
     // 检查是否点击了合成炉（用于触发合成）

@@ -219,6 +219,107 @@ export const FOOD_TYPES = {
     glow: true,
     reaction: 'nerd',
   },
+
+  // 新增食材 - 自然类
+  crystal: {
+    name: '水晶',
+    color: [200, 220, 255],
+    points: 35,
+    category: 'nature',
+    shape: 'hexagon',
+    size: 28,
+    glow: true,
+    rotation: true,
+  },
+  bone: {
+    name: '骨头',
+    color: [240, 240, 240],
+    points: 22,
+    category: 'nature',
+    shape: 'bone',
+    size: 30,
+  },
+
+  // 新增食材 - 液体系
+  poison: {
+    name: '毒液',
+    color: [128, 0, 128],
+    points: 28,
+    category: 'liquid',
+    shape: 'blob',
+    size: 26,
+    glow: true,
+    reaction: 'disgust',
+  },
+  goldWater: {
+    name: '金水',
+    color: [255, 215, 0],
+    points: 40,
+    category: 'liquid',
+    shape: 'blob',
+    size: 25,
+    glow: true,
+  },
+
+  // 新增食材 - 奇怪类
+  eyeball: {
+    name: '眼球',
+    color: [255, 255, 255],
+    points: 30,
+    category: 'weird',
+    shape: 'eye',
+    size: 28,
+    glow: true,
+    reaction: 'disgust',
+  },
+  gunpowder: {
+    name: '火药',
+    color: [50, 50, 50],
+    points: 25,
+    category: 'weird',
+    shape: 'bag',
+    size: 25,
+  },
+
+  // 新增食材 - 美味类
+  barbecue: {
+    name: '烧烤',
+    color: [139, 69, 19],
+    points: 42,
+    category: 'delicious',
+    shape: 'meat',
+    size: 32,
+    reaction: 'happy',
+  },
+  juice: {
+    name: '果汁',
+    color: [255, 165, 0],
+    points: 38,
+    category: 'delicious',
+    shape: 'cup',
+    size: 28,
+    reaction: 'happy',
+  },
+
+  // 新增食材 - 抽象类
+  moon: {
+    name: '月亮',
+    color: [200, 200, 220],
+    points: 48,
+    category: 'abstract',
+    shape: 'crescent',
+    size: 30,
+    glow: true,
+  },
+  sun: {
+    name: '太阳',
+    color: [255, 200, 50],
+    points: 52,
+    category: 'abstract',
+    shape: 'sunShape',
+    size: 35,
+    glow: true,
+  },
 };
 
 // 所有食物类型键列表
@@ -325,7 +426,7 @@ export function createFood() {
         if (foodType.rainbow) {
           const hue = (this.wobbleTime * 100) % 360;
           const rgbColor = hsl2rgb(hue, 100, 60);
-          this.color = rgb(rgbColor[0], rgbColor[1], rgbColor[2]);
+          this.color = rgb(rgbColor.r, rgbColor.g, rgbColor.b);
         }
         
         // 超出屏幕范围则移除
@@ -560,7 +661,150 @@ function drawFoodShape(food, foodType) {
       food.add([rect(foodType.size * 0.5, 3), pos(-3, 0), color(100, 200, 255), anchor('center')]);
       food.add([rect(foodType.size * 0.6, 3), pos(2, 6), color(255, 200, 100), anchor('center')]);
       break;
-      
+
+    case 'hexagon':
+      // 六边形水晶
+      food.add([
+        circle(foodType.size * 0.8),
+        color(c[0], c[1], c[2]),
+        anchor('center'),
+      ]);
+      // 添加切面效果
+      for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2;
+        food.add([
+          circle(foodType.size * 0.3),
+          pos(Math.cos(angle) * foodType.size * 0.4, Math.sin(angle) * foodType.size * 0.4),
+          color(c[0] - 30, c[1] - 30, c[2] - 30),
+          anchor('center'),
+        ]);
+      }
+      break;
+
+    case 'bone':
+      // 骨头
+      food.add([
+        rect(foodType.size * 0.3, foodType.size * 0.8),
+        color(c[0], c[1], c[2]),
+        anchor('center'),
+      ]);
+      food.add([
+        circle(foodType.size * 0.25),
+        pos(0, -foodType.size * 0.35),
+        color(c[0], c[1], c[2]),
+        anchor('center'),
+      ]);
+      food.add([
+        circle(foodType.size * 0.25),
+        pos(0, foodType.size * 0.35),
+        color(c[0], c[1], c[2]),
+        anchor('center'),
+      ]);
+      break;
+
+    case 'eye':
+      // 眼球
+      food.add([
+        circle(foodType.size * 0.9),
+        color(c[0], c[1], c[2]),
+        anchor('center'),
+      ]);
+      food.add([
+        circle(foodType.size * 0.4),
+        color(255, 255, 255),
+        anchor('center'),
+      ]);
+      food.add([
+        circle(foodType.size * 0.25),
+        color(255, 0, 0),
+        anchor('center'),
+      ]);
+      food.add([
+        circle(foodType.size * 0.1),
+        color(0, 0, 0),
+        anchor('center'),
+      ]);
+      break;
+
+    case 'bag':
+      // 火药袋
+      food.add([
+        rect(foodType.size * 0.8, foodType.size * 0.9),
+        color(c[0], c[1], c[2]),
+        anchor('center'),
+      ]);
+      food.add([
+        circle(foodType.size * 0.2),
+        pos(0, -foodType.size * 0.45),
+        color(c[0] + 20, c[1] + 20, c[2] + 20),
+        anchor('center'),
+      ]);
+      break;
+
+    case 'meat':
+      // 烧烤肉块
+      food.add([
+        circle(foodType.size * 0.7),
+        color(c[0], c[1], c[2]),
+        anchor('center'),
+      ]);
+      // 烤痕
+      food.add([rect(foodType.size * 0.5, 3), pos(-5, 0), color(100, 50, 20), anchor('center')]);
+      food.add([rect(foodType.size * 0.4, 3), pos(3, 5), color(100, 50, 20), anchor('center')]);
+      food.add([rect(foodType.size * 0.3, 3), pos(-2, -5), color(100, 50, 20), anchor('center')]);
+      break;
+
+    case 'cup':
+      // 果汁杯
+      food.add([
+        rect(foodType.size * 0.6, foodType.size * 0.8),
+        color(c[0], c[1], c[2]),
+        anchor('center'),
+      ]);
+      food.add([
+        rect(foodType.size * 0.7, 4),
+        pos(0, foodType.size * 0.35),
+        color(c[0] - 30, c[1] - 30, c[2] - 30),
+        anchor('center'),
+      ]);
+      break;
+
+    case 'crescent':
+      // 月牙
+      food.add([
+        circle(foodType.size * 0.6),
+        pos(-8, 0),
+        color(c[0], c[1], c[2]),
+        anchor('center'),
+      ]);
+      food.add([
+        circle(foodType.size * 0.5),
+        pos(-12, 0),
+        color(30, 30, 50),
+        anchor('center'),
+      ]);
+      break;
+
+    case 'sunShape':
+      // 太阳
+      food.add([
+        circle(foodType.size * 0.5),
+        color(c[0], c[1], c[2]),
+        anchor('center'),
+      ]);
+      // 光芒
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        food.add([
+          rect(6, foodType.size * 0.3),
+          pos(Math.cos(angle) * foodType.size * 0.6, Math.sin(angle) * foodType.size * 0.6),
+          color(c[0], c[1], c[2]),
+          anchor('center'),
+          rotate(angle * 180 / Math.PI + 90),
+        ]);
+      }
+      break;
+
     default:
       // 默认圆形
       food.add([

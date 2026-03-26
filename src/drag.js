@@ -7,6 +7,8 @@ import { getMonster } from './monster.js';
 import { getActiveFoods, FOOD_TYPES } from './food.js';
 import { gameState } from './state.js';
 import { getUIRefs } from './ui.js';
+import { isFoodInForge, addFoodToForge, canCraft, craft, isClickOnForge, getForgeElement } from './forge.js';
+import { checkRecipe, unlockRecipe, RARITY_CONFIG } from './recipes.js';
 
 let isDragging = false;
 let draggedFood = null;
@@ -72,6 +74,14 @@ export function initDragSystem(monster, state) {
     if (isClickOnFullscreenBtn(mouse)) {
       handleFullscreenClick();
       return; // 不处理食物拖拽
+    }
+
+    // 检查是否点击了合成炉（用于触发合成）
+    if (isClickOnForge(mouse)) {
+      if (canCraft()) {
+        triggerCraft();
+      }
+      return;
     }
 
     // 检查是否点击到了食物（使用距离检测）
@@ -175,6 +185,22 @@ function updateDrag() {
 
 function endDrag() {
   if (!draggedFood) return;
+  
+  // 检查是否在合成炉区域
+  if (isFoodInForge(draggedFood)) {
+    // 尝试添加到合成炉
+    const added = addFoodToForge(draggedFood);
+    if (added) {
+      // 成功添加到合成炉
+      isDragging = false;
+      draggedFood = null;
+      dragPositions = [];
+      return;
+    } else {
+      // 合成炉已满，弹回
+      showForgeFullEffect(draggedFood);
+    }
+  }
   
   // 计算最终投掷速度
   const speed = Math.sqrt(throwVelocity.x ** 2 + throwVelocity.y ** 2);
@@ -553,4 +579,306 @@ export function drawTrailLine() {
     //   color: rgba(255, 255, 255, alpha * 0.5),
     // });
   }
+}
+
+// 显示合成炉已满特效
+function showForgeFullEffect(food) {
+  add([
+    text('已满!', { size: 20 }),
+    pos(food.pos.x, food.pos.y - 40),
+    anchor('center'),
+    color(255, 100, 100),
+    opacity(1),
+    lifespan(1),
+    z(20),
+    {
+      update() {
+        this.pos.y -= 30 * dt();
+        this.opacity -= dt();
+      }
+    },
+  ]);
+}
+
+// 触发合成
+function triggerCraft() {
+  const foods = craft();
+  if (foods) {
+    // 获取食物类型键
+    const foodTypeKeys = foods.map(food => food.typeKey);
+
+    // 检查配方
+    const recipe = checkRecipe(foodTypeKeys);
+
+    if (recipe) {
+      // 配方匹配成功
+      const isNewUnlock = unlockRecipe(recipe.id);
+
+      // 显示合成特效
+      showCraftSuccessEffect(recipe, isNewUnlock);
+
+      // 生成合成产物
+      createCraftedItem(recipe);
+    } else {
+      // 配方不匹配
+      showCraftFailEffect();
+    }
+  }
+}
+
+// 显示合成成功特效
+function showCraftSuccessEffect(recipe, isNewUnlock) {
+  const forgePos = getForgeElement()?.pos || vec2(150, height() / 2);
+  const rarityConfig = RARITY_CONFIG[recipe.rarity];
+
+  // 闪光效果
+  add([
+    circle(150),
+    pos(forgePos),
+    color(rarityConfig.color[0], rarityConfig.color[1], rarityConfig.color[2]),
+    opacity(0.8),
+    anchor('center'),
+    z(50),
+    'craft-flash',
+    {
+      life: 0.5,
+      update() {
+        this.life -= dt();
+        this.scale = vec2(1 + (0.5 - this.life) * 2);
+        this.opacity = this.life * 1.6;
+        if (this.life <= 0) {
+          this.destroy();
+        }
+      }
+    },
+  ]);
+
+  // 粒子爆炸
+  for (let i = 0; i < 12; i++) {
+    const angle = (i / 12) * Math.PI * 2;
+    const speed = rand(150, 300);
+    const color = rarityConfig.color;
+
+    add([
+      circle(rand(5, 12)),
+      pos(forgePos),
+      color(color[0], color[1], color[2]),
+      opacity(1),
+      lifespan(0.8),
+      z(45),
+      {
+        update() {
+          const currentSpeed = speed * (1 - this.opacity);
+          this.pos.x += Math.cos(angle) * currentSpeed * dt();
+          this.pos.y += Math.sin(angle) * currentSpeed * dt();
+          this.opacity -= 1.25 * dt();
+        }
+      },
+    ]);
+  }
+
+  // 合成成功文字
+  add([
+    text('合成成功!', { size: 28 }),
+    pos(forgePos.x, forgePos.y - 100),
+    anchor('center'),
+    color(rarityConfig.color[0], rarityConfig.color[1], rarityConfig.color[2]),
+    opacity(1),
+    lifespan(1.2),
+    z(50),
+    {
+      update() {
+        this.pos.y -= 40 * dt();
+        this.opacity -= 0.8 * dt();
+      }
+    },
+  ]);
+
+  // 如果是新解锁的配方
+  if (isNewUnlock) {
+    add([
+      text('🎉 解锁新配方!', { size: 24 }),
+      pos(forgePos.x, forgePos.y - 140),
+      anchor('center'),
+      color(255, 215, 0),
+      opacity(1),
+      lifespan(1.5),
+      z(50),
+      {
+        update() {
+          this.pos.y -= 30 * dt();
+          this.opacity -= 0.6 * dt();
+        }
+      },
+    ]);
+
+    add([
+      text(recipe.name, { size: 20 }),
+      pos(forgePos.x, forgePos.y - 170),
+      anchor('center'),
+      color(255, 255, 255),
+      opacity(1),
+      lifespan(1.5),
+      z(50),
+      {
+        update() {
+          this.pos.y -= 30 * dt();
+          this.opacity -= 0.6 * dt();
+        }
+      },
+    ]);
+  }
+}
+
+// 显示合成失败特效
+function showCraftFailEffect() {
+  const forgePos = getForgeElement()?.pos || vec2(150, height() / 2);
+
+  add([
+    circle(100),
+    pos(forgePos),
+    color(100, 100, 100),
+    opacity(0.6),
+    anchor('center'),
+    z(50),
+    'craft-fail-flash',
+    {
+      life: 0.3,
+      update() {
+        this.life -= dt();
+        this.scale = vec2(1 + (0.3 - this.life) * 1.5);
+        this.opacity = this.life * 2;
+        if (this.life <= 0) {
+          this.destroy();
+        }
+      }
+    },
+  ]);
+
+  add([
+    text('❌ 无效配方', { size: 24 }),
+    pos(forgePos.x, forgePos.y - 80),
+    anchor('center'),
+    color(255, 100, 100),
+    opacity(1),
+    lifespan(1),
+    z(50),
+    {
+      update() {
+        this.pos.y -= 30 * dt();
+        this.opacity -= dt();
+      }
+    },
+  ]);
+
+  // 烟雾效果
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * Math.PI * 2;
+    const speed = rand(80, 150);
+
+    add([
+      circle(rand(8, 15)),
+      pos(forgePos),
+      color(80, 80, 80),
+      opacity(0.5),
+      lifespan(0.6),
+      z(45),
+      {
+        update() {
+          this.pos.x += Math.cos(angle) * speed * dt();
+          this.pos.y += Math.sin(angle) * speed * dt();
+          this.opacity -= 0.8 * dt();
+        }
+      },
+    ]);
+  }
+}
+
+// 创建合成产物
+function createCraftedItem(recipe) {
+  const forgePos = getForgeElement()?.pos || vec2(150, height() / 2);
+
+  const craftedFood = add([
+    pos(forgePos.x, forgePos.y),
+    anchor('center'),
+    z(10),
+    opacity(1),
+    rotate(0),
+    'food',
+    'crafted',
+    {
+      foodType: {
+        name: recipe.name,
+        color: recipe.color,
+        points: recipe.points,
+        category: recipe.category,
+        glow: recipe.glow,
+      },
+      typeKey: recipe.id,
+    },
+  ]);
+
+  const c = recipe.color;
+  const size = 40;
+
+  craftedFood.add([
+    circle(size),
+    color(c[0], c[1], c[2]),
+    anchor('center'),
+  ]);
+
+  if (recipe.glow) {
+    craftedFood.add([
+      circle(size + 10),
+      color(c[0], c[1], c[2]),
+      opacity(0.3),
+      anchor('center'),
+    ]);
+  }
+
+  // 弹出动画
+  craftedFood.use({
+    bounceTime: 0,
+    targetX: width() / 2,
+    targetY: height() / 2 - 100,
+    update() {
+      this.bounceTime += dt();
+
+      const bounce = Math.sin(this.bounceTime * 5) * Math.exp(-this.bounceTime * 3) * 50;
+      this.pos.y += bounce * dt();
+
+      this.pos.x += (this.targetX - this.pos.x) * 3 * dt();
+      this.pos.y += (this.targetY - this.pos.y) * 3 * dt();
+
+      this.angle += 50 * dt();
+
+      if (this.pos.x < -100 || this.pos.x > width() + 100 ||
+          this.pos.y < -100 || this.pos.y > height() + 100) {
+        this.destroy();
+      }
+    }
+  });
+
+  // 显示得分
+  add([
+    text(`+${recipe.points}`, { size: 32, font: 'monospace' }),
+    pos(forgePos.x, forgePos.y - 60),
+    anchor('center'),
+    color(255, 255, 100),
+    opacity(1),
+    lifespan(1.5),
+    z(20),
+    {
+      update() {
+        this.pos.y -= 40 * dt();
+        this.opacity -= 0.7 * dt();
+      }
+    },
+  ]);
+
+  // 增加游戏分数
+  gameState.score += recipe.points;
+
+  // 增加饱食度
+  gameState.hunger = Math.min(100, gameState.hunger + recipe.points / 3);
 }

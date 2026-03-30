@@ -1,23 +1,26 @@
 /**
- * 配方面板模块
+ * 配方面板模块 - HTML弹窗版本
  */
 
-import { RECIPES, RARITY_CONFIG, getAllRecipes, isRecipeUnlocked, getRecipeHint, getRecipeProgress } from './recipes.js';
+import { RARITY_CONFIG, getAllRecipes, isRecipeUnlocked, getRecipeHint, getRecipeProgress } from './recipes.js';
 import { FOOD_TYPES } from './food.js';
 import { registerRecipePanelFuncs } from './console.js';
 
-let recVisible = false;
+let isOpen = false;
 
-function sc(col) {
-  return [
-    Math.max(0, Math.min(255, col?.[0] || 0)),
-    Math.max(0, Math.min(255, col?.[1] || 0)),
-    Math.max(0, Math.min(255, col?.[2] || 0)),
-  ];
+/**
+ * RGB数组转CSS颜色
+ */
+function rgbToCss(col) {
+  if (!col || col.length < 3) return '#888888';
+  return `rgb(${col[0]}, ${col[1]}, ${col[2]})`;
 }
 
+/**
+ * 创建配方按钮（Canvas中的按钮）
+ */
 export function createRecipeButton() {
-  const b = add([
+  const btn = add([
     rect(100, 36),
     pos(width() - 130, 110),
     anchor('topleft'),
@@ -28,126 +31,128 @@ export function createRecipeButton() {
     area(),
   ]);
 
-  b.add([text('⚗️', { size: 18 }), pos(20, 18), anchor('center')]);
-  b.add([text('配方', { size: 16 }), pos(60, 18), anchor('center'), color(200, 200, 220)]);
+  btn.add([text('⚗️', { size: 18 }), pos(20, 18), anchor('center')]);
+  btn.add([text('配方', { size: 16 }), pos(60, 18), anchor('center'), color(200, 200, 220)]);
 
-  b.onHover(() => b.color = rgb(80, 80, 120));
-  b.onHoverEnd(() => b.color = rgb(60, 60, 90));
-  b.onClick(() => {
-    console.log('[Recipe] Button clicked, recVisible:', recVisible);
-    recVisible ? closeRec() : openRec();
-  });
+  btn.onHover(() => btn.color = rgb(80, 80, 120));
+  btn.onHoverEnd(() => btn.color = rgb(60, 60, 90));
+  btn.onClick(() => isOpen ? closeRec() : openRec());
 
-  onUpdate(() => b.pos.x = width() - 130);
+  onUpdate(() => btn.pos.x = width() - 130);
 }
 
-function openRec() {
-  console.log('[Recipe] openRec called');
-  recVisible = true;
-  rebuildRec();
-}
+/**
+ * 渲染配方列表
+ */
+function renderRecipeList() {
+  const container = document.getElementById('recipe-list');
+  const progressEl = document.getElementById('recipe-progress');
+  if (!container) return;
 
-function closeRec() {
-  console.log('[Recipe] closeRec called');
-  recVisible = false;
-  destroyAll('rec-p');
-}
-
-function rebuildRec() {
-  if (!recVisible) return;
-  
-  destroyAll('rec-p');
-
-  const w = 500, h = 600;
-  const cx = center().x, cy = center().y;
-  const l = cx - w / 2, t = cy - h / 2;
-
-  // 遮罩
-  const ov = add([rect(width(), height()), color(0, 0, 0), opacity(0.7), z(100), fixed(), area(), 'rec-p']);
-  // 延迟注册点击事件，避免打开时立即关闭
-  wait(0.05, () => {
-    if (ov.exists()) {
-      ov.onClick(() => closeRec());
-    }
-  });
-
-  // 窗口
-  add([rect(w, h), pos(l, t), color(35, 35, 45), outline(3, rgb(80, 100, 140)), z(101), fixed(), 'rec-p']);
-
-  // 标题栏
-  add([rect(w, 50), pos(l, t), color(50, 60, 80), z(102), fixed(), 'rec-p']);
-  add([text('⚗️ 合成配方', { size: 20 }), pos(l + 20, t + 25), anchor('left'), color(255, 255, 255), z(103), fixed(), 'rec-p']);
-
-  // 进度
-  const prog = getRecipeProgress();
-  add([text(`${prog.unlocked}/${prog.total} 已解锁`, { size: 12 }), pos(l + w - 20, t + 25), anchor('right'), color(255, 200, 100), z(103), fixed(), 'rec-p']);
-
-  // 关闭按钮
-  const cb = add([rect(60, 32), pos(l + w - 70, t + 10), color(180, 60, 60), outline(2, rgb(220, 80, 80)), z(200), fixed(), area(), 'rec-p']);
-  cb.add([text('关闭', { size: 14 }), pos(30, 16), anchor('center'), color(255, 255, 255)]);
-  cb.onHover(() => cb.color = rgb(220, 80, 80));
-  cb.onHoverEnd(() => cb.color = rgb(180, 60, 60));
-  cb.onClick(() => closeRec());
-
-  // 配方列表
   const recipes = getAllRecipes();
-  recipes.forEach((recipe, i) => {
-    const iy = t + 60 + i * 90;
-    renderRecipe(recipe, l, iy, w);
-  });
-}
+  const progress = getRecipeProgress();
 
-function renderRecipe(recipe, l, iy, w) {
-  const itemW = w - 40;
-  const unlocked = isRecipeUnlocked(recipe.id);
-  const rCfg = RARITY_CONFIG[recipe.rarity] || RARITY_CONFIG['common'];
-  const rc = sc(rCfg.color);
-  const bc = sc(rCfg.bgColor);
-
-  // 背景
-  const item = add([rect(itemW, 80), pos(l + 20, iy), color(45, 45, 55), outline(2, rgb(rc[0], rc[1], rc[2])), z(103), fixed(), area(), 'rec-p']);
-
-  // 稀有度标签
-  add([rect(60, 20), pos(l + itemW - 10, iy + 10), anchor('topright'), color(bc[0], bc[1], bc[2]), outline(1, rgb(rc[0], rc[1], rc[2])), z(104), fixed(), 'rec-p']);
-  add([text(`${rCfg.icon || ''} ${rCfg.name || '普通'}`, { size: 10 }), pos(l + itemW - 40, iy + 20), anchor('center'), color(rc[0], rc[1], rc[2]), z(105), fixed(), 'rec-p']);
-
-  // 名称
-  add([text(unlocked ? recipe.name : '???', { size: 16 }), pos(l + 30, iy + 25), anchor('left'), color(unlocked ? 255 : 150, unlocked ? 255 : 150, unlocked ? 255 : 150), z(104), fixed(), 'rec-p']);
-
-  // 分数
-  add([text(unlocked ? `${recipe.points}分` : '???', { size: 12 }), pos(l + 30, iy + 45), anchor('left'), color(unlocked ? 255 : 100, unlocked ? 255 : 100, unlocked ? 255 : 100), z(104), fixed(), 'rec-p']);
-
-  // 食材或问号
-  if (unlocked && recipe.ingredients) {
-    recipe.ingredients.forEach((ing, j) => {
-      const f = FOOD_TYPES[ing];
-      if (f) {
-        const fc = sc(f.color);
-        add([circle(15), pos(l + 180 + j * 45, iy + 40), color(fc[0], fc[1], fc[2]), z(104), fixed(), 'rec-p']);
-      }
-    });
-    add([text(recipe.description || '', { size: 10 }), pos(l + 30, iy + 65), anchor('left'), color(180, 180, 180), z(104), fixed(), 'rec-p']);
-  } else {
-    for (let j = 0; j < 3; j++) {
-      add([text('?', { size: 16 }), pos(l + 180 + j * 45, iy + 40), anchor('center'), color(100, 100, 100), z(104), fixed(), 'rec-p']);
-    }
-    add([text('💡 提示: ' + getRecipeHint(recipe.id), { size: 9 }), pos(l + 30, iy + 65), anchor('left'), color(150, 150, 180), z(104), fixed(), 'rec-p']);
+  // 更新进度
+  if (progressEl) {
+    progressEl.textContent = `${progress.unlocked}/${progress.total} 已解锁`;
   }
 
-  item.onHover(() => item.color = rgb(55, 55, 65));
-  item.onHoverEnd(() => item.color = rgb(45, 45, 55));
+  // 渲染列表
+  container.innerHTML = '';
+
+  recipes.forEach(recipe => {
+    const unlocked = isRecipeUnlocked(recipe.id);
+    const rCfg = RARITY_CONFIG[recipe.rarity] || RARITY_CONFIG['common'];
+    
+    const item = document.createElement('div');
+    item.className = 'recipe-item';
+    item.style.borderColor = rgbToCss(rCfg.color);
+
+    // 构建食材HTML
+    let ingredientsHtml = '';
+    if (unlocked && recipe.ingredients) {
+      recipe.ingredients.forEach(ing => {
+        const f = FOOD_TYPES[ing];
+        if (f) {
+          ingredientsHtml += `<div class="recipe-ing-icon" style="background: ${rgbToCss(f.color)}" title="${f.name}"></div>`;
+        }
+      });
+    } else {
+      for (let i = 0; i < 3; i++) {
+        ingredientsHtml += `<div class="recipe-ing-icon">?</div>`;
+      }
+    }
+
+    item.innerHTML = `
+      <div class="recipe-item-header">
+        <span class="recipe-item-name${unlocked ? '' : ' locked'}">${unlocked ? recipe.name : '???'}</span>
+        <span class="recipe-rarity" style="background: ${rgbToCss(rCfg.bgColor)}; border: 1px solid ${rgbToCss(rCfg.color)}">${rCfg.icon || ''} ${rCfg.name || '普通'}</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span class="recipe-item-points${unlocked ? '' : ' locked'}">${unlocked ? recipe.points + ' 分' : '???'}</span>
+        <div class="recipe-ingredients">${ingredientsHtml}</div>
+      </div>
+      ${unlocked 
+        ? `<div class="recipe-desc">${recipe.description || ''}</div>` 
+        : `<div class="recipe-hint">💡 ${getRecipeHint(recipe.id)}</div>`
+      }
+    `;
+
+    container.appendChild(item);
+  });
 }
 
+/**
+ * 打开配方面板
+ */
+export function openRec() {
+  const modal = document.getElementById('recipe-modal');
+  if (modal) {
+    modal.classList.add('active');
+    isOpen = true;
+    renderRecipeList();
+  }
+}
+
+/**
+ * 关闭配方面板
+ */
+export function closeRec() {
+  const modal = document.getElementById('recipe-modal');
+  if (modal) {
+    modal.classList.remove('active');
+    isOpen = false;
+  }
+}
+
+/**
+ * 刷新面板
+ */
 export function refreshRecipePanel() {
-  if (!recVisible) return;
-  rebuildRec();
+  if (isOpen) {
+    renderRecipeList();
+  }
 }
 
+/**
+ * 初始化配方面板系统
+ */
 export function initRecipePanelSystem() {
   createRecipeButton();
+
+  // 注册全局关闭函数
+  window.closeRecipePanel = closeRec;
+
+  // 点击遮罩关闭
+  const modal = document.getElementById('recipe-modal');
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeRec();
+      }
+    });
+  }
+
   // 注册控制台函数
   registerRecipePanelFuncs(openRec, closeRec);
 }
-
-// 导出打开/关闭函数供控制台使用
-export { openRec, closeRec };

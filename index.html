@@ -13,6 +13,7 @@
     body {
       overflow: hidden;
       background: #1a1a2e;
+      font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
     }
     #game-container {
       width: 100vw;
@@ -21,10 +22,278 @@
     canvas {
       display: block;
     }
+
+    /* 弹窗通用样式 */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-panel {
+      background: linear-gradient(145deg, #252538, #1e1e30);
+      border-radius: 12px;
+      border: 2px solid #4a6fa5;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      max-width: 90vw;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      background: linear-gradient(90deg, #2d3a5a, #3d4a6a);
+      border-radius: 10px 10px 0 0;
+      border-bottom: 1px solid #4a6fa5;
+    }
+    .modal-title {
+      color: #fff;
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .modal-close {
+      background: #c44;
+      border: none;
+      color: #fff;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 18px;
+      transition: background 0.2s;
+    }
+    .modal-close:hover {
+      background: #e55;
+    }
+    .modal-body {
+      padding: 16px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* 图鉴样式 */
+    #encyclopedia-modal .modal-panel {
+      width: 700px;
+      height: 550px;
+    }
+    .enc-stats {
+      color: #aaa;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+    .enc-categories {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .enc-cat-btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: 2px solid;
+      background: #2a2a3a;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .enc-cat-btn:hover {
+      background: #3a3a4a;
+    }
+    .enc-cat-btn.active {
+      background: #3a3a5a;
+    }
+    .enc-list {
+      background: #15151f;
+      border-radius: 8px;
+      border: 1px solid #3a3a4a;
+      max-height: 360px;
+      overflow-y: auto;
+    }
+    .enc-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 16px;
+      border-bottom: 1px solid #2a2a3a;
+      transition: background 0.2s;
+    }
+    .enc-item:hover {
+      background: #252535;
+    }
+    .enc-item:last-child {
+      border-bottom: none;
+    }
+    .enc-item-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      margin-right: 12px;
+    }
+    .enc-item-info {
+      flex: 1;
+    }
+    .enc-item-name {
+      color: #fff;
+      font-size: 15px;
+      margin-bottom: 2px;
+    }
+    .enc-item-points {
+      color: #ffc864;
+      font-size: 13px;
+    }
+    .enc-item-tag {
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #fff;
+    }
+
+    /* 配方样式 */
+    #recipe-modal .modal-panel {
+      width: 550px;
+      height: 600px;
+    }
+    .recipe-progress {
+      color: #ffc864;
+      font-size: 12px;
+      margin-left: auto;
+      margin-right: 10px;
+    }
+    .recipe-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .recipe-item {
+      background: #2a2a3a;
+      border-radius: 8px;
+      border: 2px solid;
+      padding: 12px 16px;
+      transition: background 0.2s;
+    }
+    .recipe-item:hover {
+      background: #353545;
+    }
+    .recipe-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .recipe-item-name {
+      color: #fff;
+      font-size: 15px;
+    }
+    .recipe-item-name.locked {
+      color: #888;
+    }
+    .recipe-item-points {
+      color: #ffc864;
+      font-size: 13px;
+    }
+    .recipe-item-points.locked {
+      color: #666;
+    }
+    .recipe-rarity {
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      color: #fff;
+    }
+    .recipe-ingredients {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .recipe-ing-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+      font-size: 14px;
+      background: #1a1a2a;
+    }
+    .recipe-desc {
+      color: #999;
+      font-size: 11px;
+      margin-top: 6px;
+    }
+    .recipe-hint {
+      color: #779;
+      font-size: 11px;
+      margin-top: 6px;
+      font-style: italic;
+    }
+
+    /* 滚动条样式 */
+    .modal-body::-webkit-scrollbar,
+    .enc-list::-webkit-scrollbar {
+      width: 8px;
+    }
+    .modal-body::-webkit-scrollbar-track,
+    .enc-list::-webkit-scrollbar-track {
+      background: #1a1a2a;
+      border-radius: 4px;
+    }
+    .modal-body::-webkit-scrollbar-thumb,
+    .enc-list::-webkit-scrollbar-thumb {
+      background: #4a4a6a;
+      border-radius: 4px;
+    }
+    .modal-body::-webkit-scrollbar-thumb:hover,
+    .enc-list::-webkit-scrollbar-thumb:hover {
+      background: #5a5a7a;
+    }
   </style>
 </head>
 <body>
   <canvas id="game-container"></canvas>
+
+  <!-- 图鉴弹窗 -->
+  <div id="encyclopedia-modal" class="modal-overlay">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <span class="modal-title">📖 食材图鉴</span>
+        <button class="modal-close" onclick="closeEncyclopedia()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="enc-stats" id="enc-stats"></div>
+        <div class="enc-categories" id="enc-categories"></div>
+        <div class="enc-list" id="enc-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 配方弹窗 -->
+  <div id="recipe-modal" class="modal-overlay">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <span class="modal-title">⚗️ 合成配方</span>
+        <span class="recipe-progress" id="recipe-progress"></span>
+        <button class="modal-close" onclick="closeRecipePanel()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="recipe-list" id="recipe-list"></div>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

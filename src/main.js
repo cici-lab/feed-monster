@@ -1,9 +1,9 @@
 import kaplay from 'kaplay';
 import { createMonster, updateMonsterPosition } from './monster.js';
-import { createFood, FOOD_TYPES, initFoodSystem } from './food.js';
-import { createUI, initFullscreenControls } from './ui.js';
+import { createFood, FOOD_TYPES, initFoodSystem, clearAllActiveFoods } from './food.js';
+import { createUI, initFullscreenControls, createTitleScreen, createGameOverScreen } from './ui.js';
 import { initDragSystem } from './drag.js';
-import { gameState } from './state.js';
+import { gameState, saveGame, loadGame, resetGameState, checkGameOver } from './state.js';
 import { createForge } from './forge.js';
 import { initRecipeSystem } from './recipes.js';
 import { initEncyclopediaSystem } from './encyclopedia.js';
@@ -20,6 +20,7 @@ kaplay({
   global: true, // 启用全局函数
   stretch: true, // 自适应屏幕
   letterbox: false, // 不留黑边
+  pixelDensity: window.devicePixelRatio || 1, // 高DPI支持，修复文字模糊
   buttons: {},
   layers: ['bg', 'game', 'ui', 'top'],
 });
@@ -27,9 +28,49 @@ kaplay({
 // 加载资源 - 使用程序化绘制的精灵
 loadSprite('monster-body', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
 
+// 标题场景
+scene('title', () => {
+  // 加载存档
+  loadGame();
+  
+  // 创建标题画面
+  createTitleScreen(gameState.highScore);
+  
+  // 点击开始游戏
+  onMousePress(() => {
+    go('game');
+  });
+  
+  onKeyPress('space', () => {
+    go('game');
+  });
+});
+
+// 游戏结束场景
+scene('gameover', () => {
+  createGameOverScreen(gameState.score, gameState.highScore);
+  
+  // 点击重新开始
+  onMousePress(() => {
+    resetGameState();
+    go('game');
+  });
+  
+  onKeyPress('space', () => {
+    resetGameState();
+    go('game');
+  });
+});
+
 // 游戏场景
 scene('game', () => {
-  // 背景渐变 - 使用 fixed() 保持固定
+  // 重置游戏状态
+  resetGameState();
+  
+  // 清除所有活跃食物（修复死亡后食物不再飘出的问题）
+  clearAllActiveFoods();
+  
+  // 背景 - 使用 fixed() 保持固定
   const bg = add([
     rect(width(), height()),
     color(26, 26, 46),
@@ -94,9 +135,17 @@ scene('game', () => {
     gameState.hunger = Math.max(0, gameState.hunger - 0.5);
     ui.updateHunger(gameState.hunger);
     
-    // 饱食度过低，怪物变伤心
+    // 饱食度过低，怪物变伤心，并减少生命值
     if (gameState.hunger < 20) {
       monster.setSad();
+      // 饱食度过低时减少生命值
+      gameState.health = Math.max(0, gameState.health - 1);
+      ui.updateHealth(gameState.health);
+      
+      // 检查游戏结束
+      if (checkGameOver()) {
+        go('gameover');
+      }
     } else if (gameState.hunger > 80) {
       monster.setHappy();
     } else {
@@ -107,8 +156,9 @@ scene('game', () => {
   // 更新分数显示
   onUpdate(() => {
     ui.updateScore(gameState.score);
+    ui.updateHealth(gameState.health);
   });
 });
 
-// 启动游戏
-go('game');
+// 启动游戏 - 从标题画面开始
+go('title');

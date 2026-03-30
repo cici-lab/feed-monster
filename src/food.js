@@ -343,6 +343,16 @@ export function initFoodSystem(monster, state) {
   };
 }
 
+// 清除所有活跃食物（用于游戏重启）
+export function clearAllActiveFoods() {
+  activeFoods.forEach(f => {
+    if (f.exists && f.exists()) {
+      f.destroy();
+    }
+  });
+  activeFoods = [];
+}
+
 // 创建食物
 export function createFood() {
   // 随机选择食物类型

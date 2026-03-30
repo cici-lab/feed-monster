@@ -4,7 +4,7 @@
  * 便于测试和调试
  */
 
-import { gameState } from './state.js';
+import { gameState, saveGame, loadGame, resetGameState, checkGameOver } from './state.js';
 import { createFood, FOOD_TYPES, getActiveFoods } from './food.js';
 import { getMonster } from './monster.js';
 import { getCollectedFoods, canCraft, getForgeConfig } from './forge.js';
@@ -58,15 +58,19 @@ export function initConsoleControls() {
     
     /**
      * 获取当前游戏状态
-     * @returns {Object} 包含分数、饱食度、连击等信息
+     * @returns {Object} 包含分数、饱食度、生命值、连击等信息
      */
     getState() {
       return {
         score: gameState.score,
         hunger: gameState.hunger,
+        health: gameState.health,
         monsterSize: gameState.monsterSize,
         combo: gameState.combo,
         lastFeedTime: gameState.lastFeedTime,
+        highScore: gameState.highScore,
+        totalFeeds: gameState.totalFeeds,
+        isGameOver: gameState.isGameOver,
       };
     },
     
@@ -107,15 +111,69 @@ export function initConsoleControls() {
     },
     
     /**
+     * 设置生命值
+     * @param {number} health - 生命值 (0-100)
+     */
+    setHealth(health) {
+      gameState.health = Math.max(0, Math.min(100, health));
+      console.log(`[GameDebug] 生命值已设置为: ${gameState.health}`);
+    },
+    
+    /**
+     * 增加生命值
+     * @param {number} amount - 增加的生命值
+     */
+    addHealth(amount) {
+      gameState.health = Math.min(100, gameState.health + amount);
+      console.log(`[GameDebug] 生命值增加 ${amount}，当前生命值: ${gameState.health}`);
+    },
+    
+    /**
+     * 减少生命值
+     * @param {number} amount - 减少的生命值
+     */
+    reduceHealth(amount) {
+      gameState.health = Math.max(0, gameState.health - amount);
+      console.log(`[GameDebug] 生命值减少 ${amount}，当前生命值: ${gameState.health}`);
+      if (checkGameOver()) {
+        console.log('[GameDebug] 游戏结束!');
+      }
+    },
+    
+    /**
      * 重置游戏状态
      */
     resetState() {
-      gameState.score = 0;
-      gameState.hunger = 50;
-      gameState.monsterSize = 1;
-      gameState.combo = 0;
-      gameState.lastFeedTime = 0;
+      resetGameState();
       console.log('[GameDebug] 游戏状态已重置');
+    },
+    
+    /**
+     * 保存游戏
+     */
+    save() {
+      saveGame();
+      console.log('[GameDebug] 游戏已保存');
+    },
+    
+    /**
+     * 加载游戏
+     */
+    load() {
+      if (loadGame()) {
+        console.log('[GameDebug] 游戏已加载');
+      } else {
+        console.log('[GameDebug] 没有找到存档');
+      }
+    },
+    
+    /**
+     * 触发游戏结束
+     */
+    triggerGameOver() {
+      gameState.health = 0;
+      checkGameOver();
+      console.log('[GameDebug] 已触发游戏结束');
     },
     
     // ========== 食物操作 ==========
@@ -411,7 +469,15 @@ export function initConsoleControls() {
 ║   addScore(n)       - 增加分数                              ║
 ║   setHunger(n)      - 设置饱食度 (0-100)                    ║
 ║   addHunger(n)      - 增加饱食度                            ║
+║   setHealth(n)      - 设置生命值 (0-100)                    ║
+║   addHealth(n)      - 增加生命值                            ║
+║   reduceHealth(n)   - 减少生命值                            ║
 ║   resetState()      - 重置游戏状态                          ║
+║   triggerGameOver() - 触发游戏结束                          ║
+╠══════════════════════════════════════════════════════════╣
+║ 【存档系统】                                               ║
+║   save()            - 保存游戏进度                          ║
+║   load()            - 加载游戏进度                          ║
 ╠══════════════════════════════════════════════════════════╣
 ║ 【食物操作】                                               ║
 ║   spawnFood(type)   - 生成指定类型食物                      ║
@@ -491,6 +557,28 @@ export function initConsoleControls() {
       this.spawnMultipleFoods(5);
       
       console.log('=== 演示完成 ===');
+    },
+    
+    /**
+     * 测试图鉴分类
+     */
+    testEncyclopediaCategories() {
+      console.log('=== 测试图鉴分类 ===');
+      
+      const categories = ['all', 'nature', 'liquid', 'weird', 'delicious', 'abstract'];
+      
+      categories.forEach(cat => {
+        const foods = Object.entries(FOOD_TYPES).filter(([k, f]) => {
+          if (cat === 'all') return true;
+          return f.category === cat;
+        });
+        console.log(`分类 "${cat}": ${foods.length} 个食物`);
+        if (foods.length > 0) {
+          console.log(`  示例: ${foods.slice(0, 3).map(([k, f]) => f.name).join(', ')}`);
+        }
+      });
+      
+      console.log('=== 测试完成 ===');
     },
   };
   

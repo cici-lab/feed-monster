@@ -1,35 +1,36 @@
 /**
- * 图鉴系统模块
+ * 图鉴系统模块 - HTML弹窗版本
  */
 
 import { FOOD_TYPES } from './food.js';
 import { registerEncyclopediaFuncs } from './console.js';
 
-// 状态
-let encVisible = false;
-let encCategory = 'all';
-let encScroll = 0;
-let encMaxScroll = 0;
-
-const CATS = {
-  all: { name: '全部', c: [200, 200, 200] },
-  nature: { name: '自然', c: [34, 139, 34] },
-  liquid: { name: '液体', c: [100, 150, 255] },
-  weird: { name: '奇怪', c: [150, 150, 150] },
-  delicious: { name: '美味', c: [255, 200, 100] },
-  abstract: { name: '抽象', c: [255, 100, 200] },
+// 分类配置
+const CATEGORIES = {
+  all: { name: '全部', color: '#b0b0b0' },
+  nature: { name: '自然', color: '#228b22' },
+  liquid: { name: '液体', color: '#6496ff' },
+  weird: { name: '奇怪', color: '#969696' },
+  delicious: { name: '美味', color: '#ffc864' },
+  abstract: { name: '抽象', color: '#ff64c8' },
 };
 
-function sc(col) {
-  return [
-    Math.max(0, Math.min(255, col?.[0] || 0)),
-    Math.max(0, Math.min(255, col?.[1] || 0)),
-    Math.max(0, Math.min(255, col?.[2] || 0)),
-  ];
+let currentCategory = 'all';
+let isOpen = false;
+
+/**
+ * RGB数组转CSS颜色
+ */
+function rgbToCss(col) {
+  if (!col || col.length < 3) return '#888888';
+  return `rgb(${col[0]}, ${col[1]}, ${col[2]})`;
 }
 
+/**
+ * 创建图鉴按钮（Canvas中的按钮）
+ */
 export function createEncyclopediaButton() {
-  const b = add([
+  const btn = add([
     rect(100, 36),
     pos(width() - 130, 70),
     anchor('topleft'),
@@ -40,143 +41,128 @@ export function createEncyclopediaButton() {
     area(),
   ]);
 
-  b.add([text('📖', { size: 18 }), pos(20, 18), anchor('center')]);
-  b.add([text('图鉴', { size: 16 }), pos(60, 18), anchor('center'), color(220, 220, 240)]);
+  btn.add([text('📖', { size: 18 }), pos(20, 18), anchor('center')]);
+  btn.add([text('图鉴', { size: 16 }), pos(60, 18), anchor('center'), color(220, 220, 240)]);
 
-  b.onHover(() => b.color = rgb(80, 80, 120));
-  b.onHoverEnd(() => b.color = rgb(60, 60, 90));
-  b.onClick(() => {
-    console.log('[Encyclopedia] Button clicked, encVisible:', encVisible);
-    encVisible ? closeEnc() : openEnc();
-  });
+  btn.onHover(() => btn.color = rgb(80, 80, 120));
+  btn.onHoverEnd(() => btn.color = rgb(60, 60, 90));
+  btn.onClick(() => isOpen ? closeEnc() : openEnc());
 
-  onUpdate(() => b.pos.x = width() - 130);
+  onUpdate(() => btn.pos.x = width() - 130);
 }
 
-function openEnc() {
-  console.log('[Encyclopedia] openEnc called');
-  encVisible = true;
-  encScroll = 0;
-  rebuildEnc();
-}
-
-function closeEnc() {
-  console.log('[Encyclopedia] closeEnc called');
-  encVisible = false;
-  encScroll = 0;
-  destroyAll('enc-p');
-}
-
-function rebuildEnc() {
-  if (!encVisible) return;
+/**
+ * 渲染分类按钮
+ */
+function renderCategories() {
+  const container = document.getElementById('enc-categories');
+  if (!container) return;
   
-  destroyAll('enc-p');
-
-  const w = 700, h = 550;
-  const cx = center().x, cy = center().y;
-  const l = cx - w / 2, t = cy - h / 2;
-
-  // 遮罩
-  const ov = add([rect(width(), height()), color(0, 0, 0), opacity(0.85), z(100), fixed(), area(), 'enc-p']);
-  // 延迟注册点击事件，避免打开时立即关闭
-  wait(0.05, () => {
-    if (ov.exists()) {
-      ov.onClick(() => closeEnc());
-    }
-  });
-
-  // 窗口
-  add([rect(w, h), pos(l, t), color(25, 25, 35), outline(4, rgb(60, 100, 160)), z(101), fixed(), 'enc-p']);
-
-  // 标题栏
-  add([rect(w, 55), pos(l, t), color(40, 55, 85), z(102), fixed(), 'enc-p']);
-  add([text('📖 食材图鉴', { size: 26 }), pos(l + 30, t + 28), anchor('left'), color(255, 255, 255), z(103), fixed(), 'enc-p']);
-
-  // 关闭按钮
-  const cb = add([rect(60, 35), pos(l + w - 75, t + 12), color(200, 60, 60), outline(2, rgb(240, 80, 80)), z(200), fixed(), area(), 'enc-p']);
-  cb.add([text('关闭', { size: 16 }), pos(30, 17), anchor('center'), color(255, 255, 255)]);
-  cb.onHover(() => cb.color = rgb(240, 80, 80));
-  cb.onHoverEnd(() => cb.color = rgb(200, 60, 60));
-  cb.onClick(() => closeEnc());
-
-  // 统计
-  add([text(`共收录 ${Object.keys(FOOD_TYPES).length} 种食材`, { size: 16 }), pos(l + 30, t + 70), color(200, 200, 220), z(103), fixed(), 'enc-p']);
-
-  // 类别按钮
-  Object.keys(CATS).forEach((cat, i) => {
-    const cfg = CATS[cat];
-    const col = sc(cfg.c);
-    const sel = encCategory === cat;
-    const btn = add([rect(85, 35), pos(l + 30 + i * 95, t + 95), color(sel ? rgb(55, 55, 80) : rgb(40, 40, 55)), outline(2, rgb(col[0], col[1], col[2])), z(103), fixed(), area(), 'enc-p']);
-    btn.add([text(cfg.name, { size: 15 }), pos(42, 17), anchor('center'), color(255, 255, 255)]);
-    btn.onHover(() => btn.color = rgb(60, 60, 85));
-    btn.onHoverEnd(() => btn.color = sel ? rgb(55, 55, 80) : rgb(40, 40, 55));
-    btn.onClick(() => {
-      encCategory = cat;
-      encScroll = 0;
-      rebuildEnc();
-    });
-  });
-
-  // 列表背景
-  add([rect(w - 60, h - 200), pos(l + 30, t + 145), color(15, 15, 25), outline(2, rgb(50, 50, 70)), z(102), fixed(), 'enc-p']);
-
-  // 食物列表
-  renderFoodList(l, t, w, h);
-
-  // 底部提示
-  add([text('按 W/S 或 ↑/↓ 键滚动', { size: 14 }), pos(cx, t + h - 25), anchor('center'), color(150, 150, 170), z(103), fixed(), 'enc-p']);
-}
-
-function renderFoodList(l, t, w, h) {
-  const foods = getFoods();
-  const itemH = 55, gap = 8;
-  const lx = l + 30, ly = t + 145;
-  const lw = w - 60, lh = h - 200;
-
-  encMaxScroll = Math.max(0, foods.length * (itemH + gap) - lh + 20);
-
-  foods.forEach((f, i) => {
-    const y = ly + 5 + i * (itemH + gap) - encScroll;
-    if (y < ly - itemH || y > ly + lh) return;
-
-    const fc = sc(f.color);
-
-    add([rect(lw - 10, itemH), pos(lx + 5, y), color(35, 35, 50), outline(1, rgb(60, 60, 80)), z(104), fixed(), 'enc-p']);
-    add([circle(18), pos(lx + 30, y + itemH / 2), color(fc[0], fc[1], fc[2]), z(105), fixed(), 'enc-p']);
-    add([text(f.name || '未知', { size: 18 }), pos(lx + 60, y + 10), color(255, 255, 255), z(105), fixed(), 'enc-p']);
-    add([text(`${f.points || 0} 分`, { size: 15 }), pos(lx + 60, y + 32), color(255, 210, 100), z(105), fixed(), 'enc-p']);
-
-    const cfg = CATS[f.category] || CATS['all'];
-    const cc = sc(cfg.c);
-    add([rect(65, 26), pos(lx + lw - 75, y + (itemH - 26) / 2), color(cc[0], cc[1], cc[2]), opacity(0.75), z(105), fixed(), 'enc-p']);
-    add([text(cfg.name, { size: 14 }), pos(lx + lw - 42, y + itemH / 2), anchor('center'), color(255, 255, 255), z(106), fixed(), 'enc-p']);
+  container.innerHTML = '';
+  
+  Object.entries(CATEGORIES).forEach(([key, cfg]) => {
+    const btn = document.createElement('button');
+    btn.className = `enc-cat-btn${currentCategory === key ? ' active' : ''}`;
+    btn.style.borderColor = cfg.color;
+    btn.textContent = cfg.name;
+    btn.onclick = () => {
+      currentCategory = key;
+      renderCategories();
+      renderFoodList();
+    };
+    container.appendChild(btn);
   });
 }
 
-function getFoods() {
-  const all = Object.entries(FOOD_TYPES);
-  if (encCategory === 'all') return all.map(([k, f]) => ({ ...f, key: k }));
-  return all.filter(([k, f]) => f.category === encCategory).map(([k, f]) => ({ ...f, key: k }));
+/**
+ * 渲染食物列表
+ */
+function renderFoodList() {
+  const container = document.getElementById('enc-list');
+  const stats = document.getElementById('enc-stats');
+  if (!container) return;
+
+  // 过滤食物
+  const allFoods = Object.entries(FOOD_TYPES);
+  const foods = currentCategory === 'all' 
+    ? allFoods.map(([k, f]) => ({ ...f, key: k }))
+    : allFoods.filter(([_, f]) => f.category === currentCategory).map(([k, f]) => ({ ...f, key: k }));
+
+  // 更新统计
+  if (stats) {
+    stats.textContent = `共收录 ${allFoods.length} 种食材 | 当前显示 ${foods.length} 种`;
+  }
+
+  // 渲染列表
+  container.innerHTML = '';
+  
+  foods.forEach(food => {
+    const item = document.createElement('div');
+    item.className = 'enc-item';
+    
+    const catCfg = CATEGORIES[food.category] || CATEGORIES['all'];
+    
+    item.innerHTML = `
+      <div class="enc-item-icon" style="background: ${rgbToCss(food.color)}"></div>
+      <div class="enc-item-info">
+        <div class="enc-item-name">${food.name || '未知'}</div>
+        <div class="enc-item-points">${food.points || 0} 分</div>
+      </div>
+      <span class="enc-item-tag" style="background: ${catCfg.color}">${catCfg.name}</span>
+    `;
+    
+    container.appendChild(item);
+  });
 }
 
-function doScroll(dir) {
-  if (!encVisible) return;
-  encScroll = dir === 'up' ? Math.max(0, encScroll - 60) : Math.min(encMaxScroll, encScroll + 60);
-  rebuildEnc();
+/**
+ * 打开图鉴
+ */
+export function openEnc() {
+  const modal = document.getElementById('encyclopedia-modal');
+  if (modal) {
+    modal.classList.add('active');
+    isOpen = true;
+    renderCategories();
+    renderFoodList();
+  }
 }
 
+/**
+ * 关闭图鉴
+ */
+export function closeEnc() {
+  const modal = document.getElementById('encyclopedia-modal');
+  if (modal) {
+    modal.classList.remove('active');
+    isOpen = false;
+  }
+}
+
+/**
+ * 初始化图鉴系统
+ */
 export function initEncyclopediaSystem() {
   createEncyclopediaButton();
 
+  // 注册全局关闭函数
+  window.closeEncyclopedia = closeEnc;
+
+  // 点击遮罩关闭
+  const modal = document.getElementById('encyclopedia-modal');
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeEnc();
+      }
+    });
+  }
+
   // 注册控制台函数
   registerEncyclopediaFuncs(openEnc, closeEnc);
-
-  onKeyPress('up', () => doScroll('up'));
-  onKeyPress('down', () => doScroll('down'));
-  onKeyPress('w', () => doScroll('up'));
-  onKeyPress('s', () => doScroll('down'));
 }
 
-// 导出打开/关闭函数供控制台使用
-export { openEnc, closeEnc };
+// 导出状态检查
+export function isEncyclopediaVisible() {
+  return isOpen;
+}

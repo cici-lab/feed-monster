@@ -24,7 +24,7 @@ function createWindow() {
 
   if (isDev) {
     // 开发模式：加载 Vite 开发服务器
-    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.loadURL('http://localhost:3000');
   } else {
     // 生产模式：加载打包后的文件
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));

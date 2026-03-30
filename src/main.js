@@ -8,6 +8,7 @@ import { createForge } from './forge.js';
 import { initRecipeSystem } from './recipes.js';
 import { initEncyclopediaSystem } from './encyclopedia.js';
 import { initRecipePanelSystem } from './recipePanel.js';
+import { initConsoleControls, registerCraftTrigger, registerFullscreenToggle } from './console.js';
 
 // 初始化 Kaplay 游戏引擎
 kaplay({
@@ -63,6 +64,9 @@ scene('game', () => {
 
   // 初始化全屏控制
   initFullscreenControls();
+
+  // 初始化控制台控制（供调试使用）
+  initConsoleControls();
 
   // 窗口大小变化时更新背景和怪物位置
   onResize(() => {

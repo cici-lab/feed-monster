@@ -32,7 +32,7 @@ export const RECIPES = {
     id: 'cosmicHeart',
     name: '宇宙之心',
     nameEn: 'Cosmic Heart',
-    ingredients: ['heart', 'moon', 'sunShape'],
+    ingredients: ['heart', 'moon', 'sun'],
     points: 150,
     rarity: 'legendary',
     description: '融合日月星辰的神秘之心',

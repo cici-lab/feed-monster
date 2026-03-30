@@ -9,6 +9,7 @@ import { gameState } from './state.js';
 import { getUIRefs } from './ui.js';
 import { isFoodInForge, addFoodToForge, canCraft, craft, isClickOnForge, getForgeElement } from './forge.js';
 import { checkRecipe, unlockRecipe, RARITY_CONFIG } from './recipes.js';
+import { registerCraftTrigger, registerFullscreenToggle } from './console.js';
 
 let isDragging = false;
 let draggedFood = null;
@@ -45,7 +46,15 @@ function isClickOnRecipeBtn(mouse) {
 
 // 检查是否点击了UI按钮区域（全屏、图鉴、配方）
 function isClickOnAnyUIButton(mouse) {
-  return isClickOnFullscreenBtn(mouse) || isClickOnEncyclopediaBtn(mouse) || isClickOnRecipeBtn(mouse);
+  const onFullscreen = isClickOnFullscreenBtn(mouse);
+  const onEncyclopedia = isClickOnEncyclopediaBtn(mouse);
+  const onRecipe = isClickOnRecipeBtn(mouse);
+  
+  if (onFullscreen || onEncyclopedia || onRecipe) {
+    console.log('[Drag] Click on button:', { onFullscreen, onEncyclopedia, onRecipe, mouse });
+  }
+  
+  return onFullscreen || onEncyclopedia || onRecipe;
 }
 
 // 处理全屏按钮点击
@@ -149,11 +158,18 @@ export function initDragSystem(monster, state) {
     }
   });
 
+  // 注册控制台函数
+  registerCraftTrigger(triggerCraft);
+  registerFullscreenToggle(handleFullscreenClick);
+
   return {
     getThrowVelocity: () => throwVelocity,
     isDragging: () => isDragging,
   };
 }
+
+// 导出 triggerCraft 函数供控制台调用
+export { triggerCraft };
 
 function startDrag(food, mousePos) {
   isDragging = true;

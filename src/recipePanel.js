@@ -4,6 +4,7 @@
 
 import { RECIPES, RARITY_CONFIG, getAllRecipes, isRecipeUnlocked, getRecipeHint, getRecipeProgress } from './recipes.js';
 import { FOOD_TYPES } from './food.js';
+import { registerRecipePanelFuncs } from './console.js';
 
 let recVisible = false;
 
@@ -32,17 +33,22 @@ export function createRecipeButton() {
 
   b.onHover(() => b.color = rgb(80, 80, 120));
   b.onHoverEnd(() => b.color = rgb(60, 60, 90));
-  b.onClick(() => recVisible ? closeRec() : openRec());
+  b.onClick(() => {
+    console.log('[Recipe] Button clicked, recVisible:', recVisible);
+    recVisible ? closeRec() : openRec();
+  });
 
   onUpdate(() => b.pos.x = width() - 130);
 }
 
 function openRec() {
+  console.log('[Recipe] openRec called');
   recVisible = true;
   rebuildRec();
 }
 
 function closeRec() {
+  console.log('[Recipe] closeRec called');
   recVisible = false;
   destroyAll('rec-p');
 }
@@ -58,7 +64,12 @@ function rebuildRec() {
 
   // 遮罩
   const ov = add([rect(width(), height()), color(0, 0, 0), opacity(0.7), z(100), fixed(), area(), 'rec-p']);
-  ov.onClick(() => closeRec());
+  // 延迟注册点击事件，避免打开时立即关闭
+  wait(0.05, () => {
+    if (ov.exists()) {
+      ov.onClick(() => closeRec());
+    }
+  });
 
   // 窗口
   add([rect(w, h), pos(l, t), color(35, 35, 45), outline(3, rgb(80, 100, 140)), z(101), fixed(), 'rec-p']);
@@ -101,10 +112,10 @@ function renderRecipe(recipe, l, iy, w) {
   add([text(`${rCfg.icon || ''} ${rCfg.name || '普通'}`, { size: 10 }), pos(l + itemW - 40, iy + 20), anchor('center'), color(rc[0], rc[1], rc[2]), z(105), fixed(), 'rec-p']);
 
   // 名称
-  add([text(unlocked ? recipe.name : '???', { size: 16 }), pos(l + 30, iy + 25), anchor('left'), color(unlocked ? 255 : 150), z(104), fixed(), 'rec-p']);
+  add([text(unlocked ? recipe.name : '???', { size: 16 }), pos(l + 30, iy + 25), anchor('left'), color(unlocked ? 255 : 150, unlocked ? 255 : 150, unlocked ? 255 : 150), z(104), fixed(), 'rec-p']);
 
   // 分数
-  add([text(unlocked ? `${recipe.points}分` : '???', { size: 12 }), pos(l + 30, iy + 45), anchor('left'), color(unlocked ? 255 : 100), z(104), fixed(), 'rec-p']);
+  add([text(unlocked ? `${recipe.points}分` : '???', { size: 12 }), pos(l + 30, iy + 45), anchor('left'), color(unlocked ? 255 : 100, unlocked ? 255 : 100, unlocked ? 255 : 100), z(104), fixed(), 'rec-p']);
 
   // 食材或问号
   if (unlocked && recipe.ingredients) {
@@ -134,4 +145,9 @@ export function refreshRecipePanel() {
 
 export function initRecipePanelSystem() {
   createRecipeButton();
+  // 注册控制台函数
+  registerRecipePanelFuncs(openRec, closeRec);
 }
+
+// 导出打开/关闭函数供控制台使用
+export { openRec, closeRec };

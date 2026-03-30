@@ -3,6 +3,7 @@
  */
 
 import { FOOD_TYPES } from './food.js';
+import { registerEncyclopediaFuncs } from './console.js';
 
 // 状态
 let encVisible = false;
@@ -44,18 +45,23 @@ export function createEncyclopediaButton() {
 
   b.onHover(() => b.color = rgb(80, 80, 120));
   b.onHoverEnd(() => b.color = rgb(60, 60, 90));
-  b.onClick(() => encVisible ? closeEnc() : openEnc());
+  b.onClick(() => {
+    console.log('[Encyclopedia] Button clicked, encVisible:', encVisible);
+    encVisible ? closeEnc() : openEnc();
+  });
 
   onUpdate(() => b.pos.x = width() - 130);
 }
 
 function openEnc() {
+  console.log('[Encyclopedia] openEnc called');
   encVisible = true;
   encScroll = 0;
   rebuildEnc();
 }
 
 function closeEnc() {
+  console.log('[Encyclopedia] closeEnc called');
   encVisible = false;
   encScroll = 0;
   destroyAll('enc-p');
@@ -72,7 +78,12 @@ function rebuildEnc() {
 
   // 遮罩
   const ov = add([rect(width(), height()), color(0, 0, 0), opacity(0.85), z(100), fixed(), area(), 'enc-p']);
-  ov.onClick(() => closeEnc());
+  // 延迟注册点击事件，避免打开时立即关闭
+  wait(0.05, () => {
+    if (ov.exists()) {
+      ov.onClick(() => closeEnc());
+    }
+  });
 
   // 窗口
   add([rect(w, h), pos(l, t), color(25, 25, 35), outline(4, rgb(60, 100, 160)), z(101), fixed(), 'enc-p']);
@@ -158,8 +169,14 @@ function doScroll(dir) {
 export function initEncyclopediaSystem() {
   createEncyclopediaButton();
 
+  // 注册控制台函数
+  registerEncyclopediaFuncs(openEnc, closeEnc);
+
   onKeyPress('up', () => doScroll('up'));
   onKeyPress('down', () => doScroll('down'));
   onKeyPress('w', () => doScroll('up'));
   onKeyPress('s', () => doScroll('down'));
 }
+
+// 导出打开/关闭函数供控制台使用
+export { openEnc, closeEnc };

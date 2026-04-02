@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <!-- 身体渐变 -->
+    <radialGradient id="bodyGradient" cx="35%" cy="35%" r="60%">
+      <stop offset="0%" style="stop-color:#7defa1"/>
+      <stop offset="50%" style="stop-color:#4ac87a"/>
+      <stop offset="100%" style="stop-color:#2d9a52"/>
+    </radialGradient>
+    <!-- 眼睛渐变 -->
+    <radialGradient id="eyeGradient" cx="40%" cy="40%" r="50%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="100%" style="stop-color:#e8e8e8"/>
+    </radialGradient>
+    <!-- 阴影 -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="4" stdDeviation="3" flood-color="#1a5a32" flood-opacity="0.3"/>
+    </filter>
+    <!-- 毛发效果 -->
+    <filter id="fur">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+  
+  <!-- 身体阴影 -->
+  <ellipse cx="100" cy="165" rx="55" ry="12" fill="#1a3a25" opacity="0.3"/>
+  
+  <!-- 左脚 -->
+  <ellipse cx="70" cy="160" rx="18" ry="10" fill="#2d9a52"/>
+  <ellipse cx="65" cy="158" rx="8" ry="5" fill="#3ab068" opacity="0.5"/>
+  
+  <!-- 右脚 -->
+  <ellipse cx="130" cy="160" rx="18" ry="10" fill="#2d9a52"/>
+  <ellipse cx="125" cy="158" rx="8" ry="5" fill="#3ab068" opacity="0.5"/>
+  
+  <!-- 身体主体 -->
+  <ellipse cx="100" cy="95" rx="70" ry="75" fill="url(#bodyGradient)" filter="url(#shadow)"/>
+  
+  <!-- 身体高光 -->
+  <ellipse cx="80" cy="60" rx="30" ry="25" fill="#8fffb8" opacity="0.3"/>
+  <ellipse cx="75" cy="55" rx="15" ry="12" fill="#ffffff" opacity="0.4"/>
+  
+  <!-- 头顶小角 -->
+  <ellipse cx="75" cy="30" rx="12" ry="18" fill="#3ab068" transform="rotate(-15 75 30)"/>
+  <ellipse cx="75" cy="22" rx="6" ry="10" fill="#5dd894" transform="rotate(-15 75 22)"/>
+  
+  <ellipse cx="125" cy="30" rx="12" ry="18" fill="#3ab068" transform="rotate(15 125 30)"/>
+  <ellipse cx="125" cy="22" rx="6" ry="10" fill="#5dd894" transform="rotate(15 125 22)"/>
+  
+  <!-- 左眼白 -->
+  <circle cx="70" cy="85" r="28" fill="url(#eyeGradient)"/>
+  <circle cx="70" cy="85" r="28" fill="none" stroke="#2d5a3d" stroke-width="2"/>
+  
+  <!-- 左眼虹膜 -->
+  <circle cx="73" cy="85" r="16" fill="#4a9a6a"/>
+  <circle cx="73" cy="85" r="14" fill="#3d8a5a"/>
+  
+  <!-- 左眼瞳孔 -->
+  <circle cx="75" cy="85" r="8" fill="#1a2a20"/>
+  
+  <!-- 左眼高光 -->
+  <circle cx="80" cy="80" r="4" fill="#ffffff"/>
+  <circle cx="72" cy="90" r="2" fill="#ffffff" opacity="0.6"/>
+  
+  <!-- 右眼白 -->
+  <circle cx="130" cy="85" r="28" fill="url(#eyeGradient)"/>
+  <circle cx="130" cy="85" r="28" fill="none" stroke="#2d5a3d" stroke-width="2"/>
+  
+  <!-- 右眼虹膜 -->
+  <circle cx="133" cy="85" r="16" fill="#4a9a6a"/>
+  <circle cx="133" cy="85" r="14" fill="#3d8a5a"/>
+  
+  <!-- 右眼瞳孔 -->
+  <circle cx="135" cy="85" r="8" fill="#1a2a20"/>
+  
+  <!-- 右眼高光 -->
+  <circle cx="140" cy="80" r="4" fill="#ffffff"/>
+  <circle cx="132" cy="90" r="2" fill="#ffffff" opacity="0.6"/>
+  
+  <!-- 鼻子 -->
+  <ellipse cx="100" cy="115" rx="8" ry="6" fill="#2d8a50"/>
+  
+  <!-- 嘴巴 -->
+  <path d="M 75 135 Q 100 155 125 135" fill="none" stroke="#2d6a42" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- 腮红 -->
+  <ellipse cx="45" cy="110" rx="15" ry="10" fill="#ff9999" opacity="0.3"/>
+  <ellipse cx="155" cy="110" rx="15" ry="10" fill="#ff9999" opacity="0.3"/>
+</svg>

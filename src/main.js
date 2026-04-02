@@ -1,5 +1,5 @@
 import kaplay from 'kaplay';
-import { createMonster, updateMonsterPosition } from './monster.js';
+import { createMonster, updateMonsterPosition, loadSavedMonsterType, setMonsterType } from './monster.js';
 import { createFood, FOOD_TYPES, initFoodSystem, clearAllActiveFoods } from './food.js';
 import { createUI, initFullscreenControls, createTitleScreen, createGameOverScreen } from './ui.js';
 import { initDragSystem } from './drag.js';
@@ -9,6 +9,7 @@ import { initRecipeSystem } from './recipes.js';
 import { initEncyclopediaSystem } from './encyclopedia.js';
 import { initRecipePanelSystem } from './recipePanel.js';
 import { initConsoleControls, registerCraftTrigger, registerFullscreenToggle } from './console.js';
+import { initMonsterSelectSystem, showMonsterSelect, hideMonsterSelect } from './monsterSelect.js';
 
 // 初始化 Kaplay 游戏引擎
 kaplay({
@@ -25,24 +26,34 @@ kaplay({
   layers: ['bg', 'game', 'ui', 'top'],
 });
 
-// 加载资源 - 使用程序化绘制的精灵
-loadSprite('monster-body', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
+// 加载怪物精灵
+loadSprite('monster-default', '/assets/monster-default.svg');
+loadSprite('monster-mike', '/assets/monster-mike.svg');
+loadSprite('monster-fang', '/assets/monster-fang.svg');
 
 // 标题场景
 scene('title', () => {
-  // 加载存档
+  // 加载存档和怪兽选择
   loadGame();
+  loadSavedMonsterType();
+  initMonsterSelectSystem();
   
   // 创建标题画面
   createTitleScreen(gameState.highScore);
   
-  // 点击开始游戏
+  // 点击开始游戏 - 显示怪兽选择
   onMousePress(() => {
-    go('game');
+    showMonsterSelect((selectedMonsterId) => {
+      setMonsterType(selectedMonsterId);
+      go('game');
+    });
   });
   
   onKeyPress('space', () => {
-    go('game');
+    showMonsterSelect((selectedMonsterId) => {
+      setMonsterType(selectedMonsterId);
+      go('game');
+    });
   });
 });
 
@@ -50,15 +61,21 @@ scene('title', () => {
 scene('gameover', () => {
   createGameOverScreen(gameState.score, gameState.highScore);
   
-  // 点击重新开始
+  // 点击重新开始 - 显示怪兽选择
   onMousePress(() => {
-    resetGameState();
-    go('game');
+    showMonsterSelect((selectedMonsterId) => {
+      setMonsterType(selectedMonsterId);
+      resetGameState();
+      go('game');
+    });
   });
   
   onKeyPress('space', () => {
-    resetGameState();
-    go('game');
+    showMonsterSelect((selectedMonsterId) => {
+      setMonsterType(selectedMonsterId);
+      resetGameState();
+      go('game');
+    });
   });
 });
 

@@ -260,6 +260,130 @@
     .enc-list::-webkit-scrollbar-thumb:hover {
       background: #5a5a7a;
     }
+
+    /* 怪兽选择样式 */
+    .monster-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .monster-card {
+      background: #2a2a3a;
+      border-radius: 12px;
+      border: 3px solid #3a3a4a;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+    }
+    .monster-card:hover {
+      background: #353545;
+      border-color: #5a5a7a;
+      transform: translateY(-3px);
+    }
+    .monster-card.selected {
+      border-color: #4a6fa5;
+      background: #2a3a4a;
+      box-shadow: 0 0 20px rgba(74, 111, 165, 0.3);
+    }
+    .monster-card-preview {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 12px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      overflow: hidden;
+    }
+    .monster-preview-img {
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    }
+    .monster-card-name {
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .monster-card-ability {
+      color: #888;
+      font-size: 12px;
+    }
+    .monster-info {
+      background: #1e1e2e;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      min-height: 80px;
+    }
+    .monster-info-name {
+      color: #fff;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .monster-info-desc {
+      color: #aaa;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    .monster-info-stats {
+      display: flex;
+      gap: 20px;
+    }
+    .monster-stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .monster-stat-label {
+      color: #888;
+      font-size: 12px;
+    }
+    .monster-stat-bar {
+      width: 80px;
+      height: 8px;
+      background: #1a1a2a;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .monster-stat-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+    .monster-stat-fill.hunger {
+      background: linear-gradient(90deg, #ff6b6b, #feca57);
+    }
+    .monster-stat-fill.growth {
+      background: linear-gradient(90deg, #5f27cd, #48dbfb);
+    }
+    .monster-confirm-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(90deg, #4a6fa5, #5a7fb5);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .monster-confirm-btn:hover:not(:disabled) {
+      background: linear-gradient(90deg, #5a7fb5, #6a8fc5);
+      transform: translateY(-2px);
+    }
+    .monster-confirm-btn:disabled {
+      background: #3a3a4a;
+      color: #666;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -290,6 +414,24 @@
       </div>
       <div class="modal-body">
         <div class="recipe-list" id="recipe-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 怪兽选择弹窗 -->
+  <div id="monster-select-modal" class="modal-overlay">
+    <div class="modal-panel" style="width: 600px; height: auto;">
+      <div class="modal-header">
+        <span class="modal-title">🎮 选择你的怪兽伙伴</span>
+      </div>
+      <div class="modal-body">
+        <div class="monster-grid" id="monster-grid"></div>
+        <div class="monster-info" id="monster-info">
+          <div class="monster-info-name" id="monster-info-name"></div>
+          <div class="monster-info-desc" id="monster-info-desc"></div>
+          <div class="monster-info-stats" id="monster-info-stats"></div>
+        </div>
+        <button class="monster-confirm-btn" id="monster-confirm-btn" disabled>开始游戏</button>
       </div>
     </div>
   </div>

@@ -17,6 +17,7 @@ export const gameState = {
   isGameOver: false,
   highScore: 0, // 最高分
   totalFeeds: 0, // 总投喂次数
+  selectedMonster: 'default', // 选中的怪兽类型
 };
 
 /**
@@ -30,6 +31,7 @@ export function saveGame() {
     monsterSize: gameState.monsterSize,
     highScore: gameState.highScore,
     totalFeeds: gameState.totalFeeds,
+    selectedMonster: gameState.selectedMonster,
     timestamp: Date.now(),
   };
   localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
@@ -45,6 +47,7 @@ export function loadGame() {
       const data = JSON.parse(saved);
       gameState.highScore = data.highScore || 0;
       gameState.totalFeeds = data.totalFeeds || 0;
+      gameState.selectedMonster = data.selectedMonster || 'default';
       console.log('[Save] 游戏存档已加载');
       return true;
     } catch (e) {
@@ -82,4 +85,18 @@ export function checkGameOver() {
     return true;
   }
   return false;
+}
+
+/**
+ * 设置选中的怪兽
+ */
+export function setSelectedMonster(monsterId) {
+  gameState.selectedMonster = monsterId;
+}
+
+/**
+ * 获取选中的怪兽
+ */
+export function getSelectedMonster() {
+  return gameState.selectedMonster;
 }

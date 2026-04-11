@@ -348,8 +348,8 @@ export function createForge() {
 
   // ===== 烟囱粒子系统 =====
   onUpdate(() => {
-    // 生成新粒子
-    if (Math.random() < 0.1) {
+    // 生成新粒子（限制最大数量为 15）
+    if (Math.random() < 0.1 && forgeState.chimneyParticles.length < 15) {
       createChimneyParticle(forgeContainer);
     }
 

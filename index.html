@@ -384,6 +384,28 @@
       color: #666;
       cursor: not-allowed;
     }
+
+    /* 食材名称提示样式 - 极简淡入 */
+    .food-tooltip {
+      position: fixed;
+      padding: 5px 12px;
+      background: rgba(0, 0, 0, 0.55);
+      border-radius: 6px;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 13px;
+      font-weight: 400;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.5s ease 0.3s;
+      z-index: 500;
+      white-space: nowrap;
+    }
+    .food-tooltip.visible {
+      opacity: 1;
+    }
+    .food-tooltip.dragging {
+      transition: none;
+    }
   </style>
 </head>
 <body>
@@ -435,6 +457,9 @@
       </div>
     </div>
   </div>
+
+  <!-- 食材名称提示 -->
+  <div id="food-tooltip" class="food-tooltip"></div>
 
   <script type="module" src="/src/main.js"></script>
 </body>

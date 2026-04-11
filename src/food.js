@@ -11,6 +11,7 @@ export const FOOD_TYPES = {
   // 自然物品
   branch: {
     name: '树枝',
+    emoji: '🪵',
     color: [139, 90, 43],
     points: 10,
     category: 'nature',
@@ -20,6 +21,7 @@ export const FOOD_TYPES = {
   },
   rock: {
     name: '石头',
+    emoji: '🪨',
     color: [128, 128, 128],
     points: 8,
     category: 'nature',
@@ -29,6 +31,7 @@ export const FOOD_TYPES = {
   },
   leaf: {
     name: '树叶',
+    emoji: '🍃',
     color: [34, 139, 34],
     points: 12,
     category: 'nature',
@@ -38,6 +41,7 @@ export const FOOD_TYPES = {
   },
   flower: {
     name: '花朵',
+    emoji: '🌸',
     color: [255, 105, 180],
     points: 15,
     category: 'nature',
@@ -46,6 +50,7 @@ export const FOOD_TYPES = {
   },
   mushroom: {
     name: '蘑菇',
+    emoji: '🍄',
     color: [200, 100, 100],
     points: 18,
     category: 'nature',
@@ -56,6 +61,7 @@ export const FOOD_TYPES = {
   // 液体/污秽
   dirtyWater: {
     name: '脏水',
+    emoji: '💧',
     color: [80, 60, 40],
     points: 12,
     category: 'liquid',
@@ -65,6 +71,7 @@ export const FOOD_TYPES = {
   },
   mud: {
     name: '泥浆',
+    emoji: '🟤',
     color: [101, 67, 33],
     points: 15,
     category: 'liquid',
@@ -74,6 +81,7 @@ export const FOOD_TYPES = {
   },
   rainbowWater: {
     name: '彩虹水',
+    emoji: '🌈',
     color: [255, 100, 200],
     points: 25,
     category: 'liquid',
@@ -84,6 +92,7 @@ export const FOOD_TYPES = {
   },
   lava: {
     name: '岩浆',
+    emoji: '🔥',
     color: [255, 69, 0],
     points: 30,
     category: 'liquid',
@@ -96,6 +105,7 @@ export const FOOD_TYPES = {
   // 奇怪物品
   battery: {
     name: '电池',
+    emoji: '🔋',
     color: [50, 50, 50],
     points: 20,
     category: 'weird',
@@ -105,6 +115,7 @@ export const FOOD_TYPES = {
   },
   sock: {
     name: '袜子',
+    emoji: '🧦',
     color: [200, 200, 220],
     points: 15,
     category: 'weird',
@@ -114,6 +125,7 @@ export const FOOD_TYPES = {
   },
   key: {
     name: '钥匙',
+    emoji: '🔑',
     color: [218, 165, 32],
     points: 22,
     category: 'weird',
@@ -122,6 +134,7 @@ export const FOOD_TYPES = {
   },
   book: {
     name: '书本',
+    emoji: '📚',
     color: [70, 130, 180],
     points: 25,
     category: 'weird',
@@ -131,6 +144,7 @@ export const FOOD_TYPES = {
   },
   phone: {
     name: '手机',
+    emoji: '📱',
     color: [40, 40, 40],
     points: 28,
     category: 'weird',
@@ -142,6 +156,7 @@ export const FOOD_TYPES = {
   // 美味食物
   burger: {
     name: '汉堡',
+    emoji: '🍔',
     color: [210, 160, 100],
     points: 35,
     category: 'delicious',
@@ -151,6 +166,7 @@ export const FOOD_TYPES = {
   },
   cake: {
     name: '蛋糕',
+    emoji: '🎂',
     color: [255, 182, 193],
     points: 40,
     category: 'delicious',
@@ -161,6 +177,7 @@ export const FOOD_TYPES = {
   },
   candy: {
     name: '糖果',
+    emoji: '🍬',
     color: [255, 100, 100],
     points: 30,
     category: 'delicious',
@@ -171,6 +188,7 @@ export const FOOD_TYPES = {
   },
   pizza: {
     name: '披萨',
+    emoji: '🍕',
     color: [255, 200, 100],
     points: 38,
     category: 'delicious',
@@ -182,6 +200,7 @@ export const FOOD_TYPES = {
   // 抽象物品
   heart: {
     name: '爱心',
+    emoji: '❤️',
     color: [255, 50, 100],
     points: 45,
     category: 'abstract',
@@ -193,6 +212,7 @@ export const FOOD_TYPES = {
   },
   star: {
     name: '星星',
+    emoji: '⭐',
     color: [255, 215, 0],
     points: 50,
     category: 'abstract',
@@ -203,6 +223,7 @@ export const FOOD_TYPES = {
   },
   musicNote: {
     name: '音符',
+    emoji: '🎵',
     color: [138, 43, 226],
     points: 40,
     category: 'abstract',
@@ -211,6 +232,7 @@ export const FOOD_TYPES = {
   },
   code: {
     name: '代码片段',
+    emoji: '💻',
     color: [0, 255, 136],
     points: 55,
     category: 'abstract',
@@ -223,6 +245,7 @@ export const FOOD_TYPES = {
   // 新增食材 - 自然类
   crystal: {
     name: '水晶',
+    emoji: '💎',
     color: [200, 220, 255],
     points: 35,
     category: 'nature',
@@ -233,6 +256,7 @@ export const FOOD_TYPES = {
   },
   bone: {
     name: '骨头',
+    emoji: '🦴',
     color: [240, 240, 240],
     points: 22,
     category: 'nature',
@@ -243,6 +267,7 @@ export const FOOD_TYPES = {
   // 新增食材 - 液体系
   poison: {
     name: '毒液',
+    emoji: '☠️',
     color: [128, 0, 128],
     points: 28,
     category: 'liquid',
@@ -253,6 +278,7 @@ export const FOOD_TYPES = {
   },
   goldWater: {
     name: '金水',
+    emoji: '✨',
     color: [255, 215, 0],
     points: 40,
     category: 'liquid',
@@ -264,6 +290,7 @@ export const FOOD_TYPES = {
   // 新增食材 - 奇怪类
   eyeball: {
     name: '眼球',
+    emoji: '👁️',
     color: [255, 255, 255],
     points: 30,
     category: 'weird',
@@ -274,6 +301,7 @@ export const FOOD_TYPES = {
   },
   gunpowder: {
     name: '火药',
+    emoji: '💥',
     color: [50, 50, 50],
     points: 25,
     category: 'weird',
@@ -284,6 +312,7 @@ export const FOOD_TYPES = {
   // 新增食材 - 美味类
   barbecue: {
     name: '烧烤',
+    emoji: '🍖',
     color: [139, 69, 19],
     points: 42,
     category: 'delicious',
@@ -293,6 +322,7 @@ export const FOOD_TYPES = {
   },
   juice: {
     name: '果汁',
+    emoji: '🧃',
     color: [255, 165, 0],
     points: 38,
     category: 'delicious',
@@ -304,6 +334,7 @@ export const FOOD_TYPES = {
   // 新增食材 - 抽象类
   moon: {
     name: '月亮',
+    emoji: '🌙',
     color: [200, 200, 220],
     points: 48,
     category: 'abstract',
@@ -313,6 +344,7 @@ export const FOOD_TYPES = {
   },
   sun: {
     name: '太阳',
+    emoji: '☀️',
     color: [255, 200, 50],
     points: 52,
     category: 'abstract',
@@ -452,6 +484,74 @@ export function createFood() {
 
   // 绘制食物形状
   drawFoodShape(food, foodType);
+
+  // 不再添加 emoji 标签，改用 HTML tooltip 在悬停时显示名字
+
+  // 添加名字标签背景（默认隐藏，拖拽时显示）
+  const nameBg = add([
+    rect(60, 24),
+    pos(startX, startY - actualSize - 35),
+    anchor('center'),
+    z(7),
+    opacity(0),
+    color(50, 50, 80),
+    'food-name-bg',
+    {
+      parentFood: food,
+      offsetY: -actualSize - 35,
+      visible: false,
+      show() {
+        this.visible = true;
+        this.opacity = 0.9;
+      },
+      hide() {
+        this.visible = false;
+        this.opacity = 0;
+      },
+      update() {
+        if (this.parentFood && this.parentFood.exists()) {
+          this.pos.x = this.parentFood.pos.x;
+          this.pos.y = this.parentFood.pos.y + this.offsetY;
+        } else {
+          this.destroy();
+        }
+      }
+    },
+  ]);
+  food.nameBg = nameBg;
+
+  // 添加名字标签文字（默认隐藏，拖拽时显示）
+  const nameLabel = add([
+    text(foodType.name, { size: 14, font: 'monospace' }),
+    pos(startX, startY - actualSize - 35),
+    anchor('center'),
+    z(8),
+    opacity(0),
+    color(255, 255, 255),
+    'food-name',
+    {
+      parentFood: food,
+      offsetY: -actualSize - 35,
+      visible: false,
+      show() {
+        this.visible = true;
+        this.opacity = 1;
+      },
+      hide() {
+        this.visible = false;
+        this.opacity = 0;
+      },
+      update() {
+        if (this.parentFood && this.parentFood.exists()) {
+          this.pos.x = this.parentFood.pos.x;
+          this.pos.y = this.parentFood.pos.y + this.offsetY;
+        } else {
+          this.destroy();
+        }
+      }
+    },
+  ]);
+  food.nameLabel = nameLabel;
 
   activeFoods.push(food);
   return food;

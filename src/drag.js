@@ -146,6 +146,9 @@ export function initDragSystem(monster, state) {
     // 更新轨迹淡出
     updateTrail();
     
+    // 更新食材悬停提示
+    updateFoodTooltip();
+    
     // 全屏按钮悬停效果
     const uiRefs = getUIRefs();
     if (uiRefs && uiRefs.fullscreenBtnBg) {
@@ -918,4 +921,65 @@ function createCraftedItem(recipe) {
 
   // 增加饱食度
   gameState.hunger = Math.min(100, gameState.hunger + recipe.points / 3);
+}
+
+// 当前悬停的食物
+let hoveredFood = null;
+
+// 更新食材悬停提示
+function updateFoodTooltip() {
+  const tooltip = document.getElementById('food-tooltip');
+  if (!tooltip) return;
+
+  const mouse = mousePos();
+  const foods = getActiveFoods();
+
+  // 拖拽时：显示被拖拽食物的名字，瞬时跟随
+  if (isDragging && draggedFood && draggedFood.foodType) {
+    tooltip.textContent = draggedFood.foodType.name;
+    
+    const foodSize = draggedFood.foodType.size || 20;
+    const actualSize = Array.isArray(foodSize) ? Math.max(foodSize[0], foodSize[1]) : foodSize;
+    
+    tooltip.style.left = draggedFood.pos.x + 'px';
+    tooltip.style.top = (draggedFood.pos.y - actualSize - 25) + 'px';
+    tooltip.style.transform = 'translate(-50%, 0)';
+    tooltip.classList.add('visible', 'dragging');
+    hoveredFood = draggedFood;
+    return;
+  }
+
+  // 非拖拽时：移除 dragging 类，恢复淡入延迟
+  tooltip.classList.remove('dragging');
+
+  // 检查鼠标是否悬停在某个食物上
+  let foundFood = null;
+  for (const food of foods) {
+    const foodSize = food.foodType?.size || 20;
+    const actualSize = Array.isArray(foodSize) ? Math.max(foodSize[0], foodSize[1]) : foodSize;
+    const dx = mouse.x - food.pos.x;
+    const dy = mouse.y - food.pos.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < actualSize + 15) {
+      foundFood = food;
+      break;
+    }
+  }
+
+  if (foundFood && foundFood.foodType) {
+    tooltip.textContent = foundFood.foodType.name;
+    
+    const foodSize = foundFood.foodType.size || 20;
+    const actualSize = Array.isArray(foodSize) ? Math.max(foodSize[0], foodSize[1]) : foodSize;
+    
+    tooltip.style.left = foundFood.pos.x + 'px';
+    tooltip.style.top = (foundFood.pos.y - actualSize - 25) + 'px';
+    tooltip.style.transform = 'translate(-50%, 0)';
+    tooltip.classList.add('visible');
+    hoveredFood = foundFood;
+  } else {
+    tooltip.classList.remove('visible');
+    hoveredFood = null;
+  }
 }

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 25" width="50" height="25">
+  <defs>
+    <radialGradient id="footGrad" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" style="stop-color:#7a2020"/>
+      <stop offset="100%" style="stop-color:#4a1010"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- 脚掌 -->
+  <ellipse cx="25" cy="15" rx="22" ry="12" fill="url(#footGrad)"/>
+  
+  <!-- 脚趾 -->
+  <ellipse cx="8" cy="10" rx="6" ry="5" fill="#5a1515"/>
+  <ellipse cx="20" cy="6" rx="5" ry="4" fill="#5a1515"/>
+  <ellipse cx="32" cy="6" rx="5" ry="4" fill="#5a1515"/>
+  <ellipse cx="42" cy="10" rx="6" ry="5" fill="#5a1515"/>
+  
+  <!-- 爪子 -->
+  <path d="M 5 8 L 2 2" stroke="#c0c0b0" stroke-width="2" stroke-linecap="round"/>
+  <path d="M 18 4 L 16 -2" stroke="#c0c0b0" stroke-width="2" stroke-linecap="round"/>
+  <path d="M 32 4 L 34 -2" stroke="#c0c0b0" stroke-width="2" stroke-linecap="round"/>
+  <path d="M 45 8 L 48 2" stroke="#c0c0b0" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- 高光 -->
+  <ellipse cx="20" cy="12" rx="8" ry="4" fill="#903030" opacity="0.3"/>
+</svg>

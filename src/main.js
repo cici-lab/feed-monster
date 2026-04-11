@@ -31,6 +31,15 @@ loadSprite('monster-default', '/assets/monster-default.svg');
 loadSprite('monster-mike', '/assets/monster-mike.svg');
 loadSprite('monster-fang', '/assets/monster-fang.svg');
 
+// 加载眼魔部件精灵
+loadSprite('monsters/eyemonster/body', '/assets/monsters/eyemonster/body.svg');
+loadSprite('monsters/eyemonster/core-eye', '/assets/monsters/eyemonster/core-eye.svg');
+loadSprite('monsters/eyemonster/sub-eye', '/assets/monsters/eyemonster/sub-eye.svg');
+loadSprite('monsters/eyemonster/mouth-closed', '/assets/monsters/eyemonster/mouth-closed.svg');
+loadSprite('monsters/eyemonster/mouth-open', '/assets/monsters/eyemonster/mouth-open.svg');
+loadSprite('monsters/eyemonster/tentacle', '/assets/monsters/eyemonster/tentacle.svg');
+loadSprite('monsters/eyemonster/foot', '/assets/monsters/eyemonster/foot.svg');
+
 // 标题场景
 scene('title', () => {
   // 加载存档和怪兽选择

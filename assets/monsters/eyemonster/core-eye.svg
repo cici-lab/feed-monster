@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <!-- 眼白渐变 -->
+    <radialGradient id="scleraGrad" cx="40%" cy="35%" r="60%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="70%" style="stop-color:#f0e8e8"/>
+      <stop offset="100%" style="stop-color:#d8c8c8"/>
+    </radialGradient>
+    <!-- 虹膜渐变 - 血红色 -->
+    <radialGradient id="irisGrad" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" style="stop-color:#ff5050"/>
+      <stop offset="50%" style="stop-color:#cc2020"/>
+      <stop offset="100%" style="stop-color:#881010"/>
+    </radialGradient>
+    <!-- 瞳孔渐变 -->
+    <radialGradient id="pupilGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#1a0808"/>
+      <stop offset="100%" style="stop-color:#000000"/>
+    </radialGradient>
+    <!-- 眼球阴影 -->
+    <filter id="eyeShadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#400000" flood-opacity="0.4"/>
+    </filter>
+    <!-- 内发光 -->
+    <filter id="innerGlow">
+      <feGaussianBlur stdDeviation="1" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  
+  <!-- 眼白 -->
+  <circle cx="50" cy="50" r="42" fill="url(#scleraGrad)" filter="url(#eyeShadow)"/>
+  <circle cx="50" cy="50" r="42" fill="none" stroke="#802020" stroke-width="2"/>
+  
+  <!-- 血丝 -->
+  <g opacity="0.3" stroke="#aa4040" stroke-width="0.5" fill="none">
+    <path d="M 15 40 Q 30 35 42 42"/>
+    <path d="M 18 55 Q 30 52 40 50"/>
+    <path d="M 60 35 Q 70 38 82 42"/>
+    <path d="M 58 60 Q 68 58 80 55"/>
+    <path d="M 40 20 Q 45 30 48 38"/>
+    <path d="M 55 75 Q 52 65 50 58"/>
+  </g>
+  
+  <!-- 虹膜 -->
+  <circle cx="52" cy="48" r="26" fill="url(#irisGrad)"/>
+  
+  <!-- 虹膜纹理 -->
+  <circle cx="52" cy="48" r="24" fill="none" stroke="#601010" stroke-width="0.5" opacity="0.5"/>
+  <circle cx="52" cy="48" r="20" fill="none" stroke="#801515" stroke-width="0.3" opacity="0.4"/>
+  
+  <!-- 瞳孔 -->
+  <circle cx="53" cy="47" r="12" fill="url(#pupilGrad)"/>
+  
+  <!-- 高光 -->
+  <circle cx="60" cy="38" r="8" fill="#ffffff" opacity="0.9"/>
+  <circle cx="46" cy="56" r="4" fill="#ffffff" opacity="0.6"/>
+  <circle cx="58" cy="52" r="2" fill="#ffffff" opacity="0.4"/>
+  
+  <!-- 脉动发光圈（动画用） -->
+  <circle cx="50" cy="50" r="38" fill="none" stroke="#ff3030" stroke-width="1" opacity="0.2" class="pulse-ring"/>
+</svg>

@@ -12,6 +12,10 @@ let onSelectCallback = null;
  * 怪兽预览图标（SVG 精灵图）
  */
 const MONSTER_PREVIEWS = {
+  eyemonster: {
+    svg: '/assets/monsters/eyemonster/body.svg',
+    bgGradient: 'linear-gradient(135deg, #7a1818, #3a0808)',
+  },
   default: {
     svg: '/assets/monster-default.svg',
     bgGradient: 'linear-gradient(135deg, #2d9a52, #1a5a32)',
@@ -102,6 +106,7 @@ function getAbilityText(ability) {
     null: '基础怪兽',
     'recipe_hint': '可查看配方提示',
     'weird_food_bonus': '奇怪食物友好',
+    'all_seeing': '可见隐藏食材',
   };
   return abilities[ability] || '基础怪兽';
 }

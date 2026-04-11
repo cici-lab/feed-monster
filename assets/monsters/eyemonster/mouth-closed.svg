@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 30" width="60" height="30">
+  <defs>
+    <linearGradient id="lipGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#802020"/>
+      <stop offset="50%" style="stop-color:#601515"/>
+      <stop offset="100%" style="stop-color:#501010"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- 闭合的嘴 - 裂缝状 -->
+  <path d="M 5 15 Q 15 12 30 14 Q 45 12 55 15" 
+        fill="none" stroke="url(#lipGrad)" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- 轻微张开的暗示 -->
+  <path d="M 10 15 Q 20 16 30 15 Q 40 16 50 15" 
+        fill="none" stroke="#301010" stroke-width="1" stroke-linecap="round"/>
+</svg>

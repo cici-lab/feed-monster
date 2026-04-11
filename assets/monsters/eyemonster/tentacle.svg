@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 60" width="20" height="60">
+  <defs>
+    <linearGradient id="tentacleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#5a1515"/>
+      <stop offset="50%" style="stop-color:#7a2020"/>
+      <stop offset="100%" style="stop-color:#5a1515"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- 触手主体 -->
+  <path d="M 10 0 Q 5 20 8 40 Q 10 50 6 58 Q 4 60 8 60 Q 12 60 14 58 Q 12 50 10 40 Q 15 20 10 0" 
+        fill="url(#tentacleGrad)"/>
+  
+  <!-- 吸盘/尖端 -->
+  <ellipse cx="8" cy="56" rx="4" ry="3" fill="#902525"/>
+  
+  <!-- 高光 -->
+  <path d="M 10 5 Q 8 20 10 35" fill="none" stroke="#a03030" stroke-width="1" opacity="0.3"/>
+</svg>

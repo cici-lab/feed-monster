@@ -418,12 +418,8 @@ export function addFoodToForge(food) {
     return false;
   }
 
-  food.use({
-    id: 'inForge',
-    update() {
-      // 在合成炉中静止
-    }
-  });
+  // 设置标志，让食物停止移动
+  food.inForge = true;
 
   forgeState.collectedFoods.push(food);
   updateFoodsDisplay();
@@ -438,6 +434,7 @@ export function addFoodToForge(food) {
 function updateFoodsDisplay() {
   const count = forgeState.collectedFoods.length;
   const foods = forgeState.collectedFoods;
+  const forgePos = forgeState.forgeElement.pos;
 
   foods.forEach((food, index) => {
     let targetX, targetY;
@@ -454,17 +451,13 @@ function updateFoodsDisplay() {
       targetY = Math.sin(angle) * 25;
     }
 
-    const forgePos = forgeState.forgeElement.pos;
-    food.use({
-      id: 'forgePosition',
-      targetX: forgePos.x + targetX,
-      targetY: forgePos.y - 40 + targetY,
-      update() {
-        this.pos.x += (this.targetX - this.pos.x) * 10 * dt();
-        this.pos.y += (this.targetY - this.pos.y) * 10 * dt();
-        this.scale = vec2(0.5);
-      }
-    });
+    const finalTargetX = forgePos.x + targetX;
+    const finalTargetY = forgePos.y - 40 + targetY;
+
+    // 直接更新位置，不使用额外的 update 组件
+    food.pos.x = finalTargetX;
+    food.pos.y = finalTargetY;
+    food.scale = vec2(0.5);
   });
 }
 

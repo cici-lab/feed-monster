@@ -443,10 +443,13 @@ export function createFood() {
     rotate(0),
     'food',
     foodType.category, // 添加分类标签
-    { foodType: foodType, typeKey: typeKey },
+    { foodType: foodType, typeKey: typeKey, inForge: false },
     {
       wobbleTime: 0,
       update() {
+        // 如果在合成炉中，停止移动
+        if (this.inForge) return;
+        
         this.wobbleTime += dt();
         
         // 主要移动方向

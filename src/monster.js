@@ -7,7 +7,7 @@ let monsterInstance = null;
 let baseY = 0;
 
 // 当前选中的怪兽类型
-let currentMonsterType = 'eyemonster';
+let currentMonsterType = 'default';
 
 /**
  * 怪兽类型配置 - 部件化设计
@@ -153,6 +153,17 @@ export function createMonster(x, y, type = null) {
     ]);
     parts.sprite = spriteObj;
     
+    // 存储当前动画引用
+    let currentAnim = null;
+    
+    // 取消当前动画的辅助函数
+    function cancelCurrentAnim() {
+      if (currentAnim) {
+        currentAnim.cancel();
+        currentAnim = null;
+      }
+    }
+    
     // 旧版动画
     let floatTime = 0;
     onUpdate(() => {
@@ -170,17 +181,32 @@ export function createMonster(x, y, type = null) {
     });
     
     // 状态方法
-    monster.setIdle = () => { currentState = 'idle'; spriteObj.color = rgb(255, 255, 255); };
-    monster.setHappy = () => { spriteObj.color = rgb(255, 255, 230); spriteObj.scale = vec2(1.25); };
-    monster.setSad = () => { spriteObj.color = rgb(200, 200, 255); spriteObj.scale = vec2(1.1); };
+    monster.setIdle = () => { 
+      cancelCurrentAnim();
+      currentState = 'idle'; 
+      spriteObj.color = rgb(255, 255, 255); 
+      spriteObj.scale = vec2(1.2);
+    };
+    monster.setHappy = () => { 
+      cancelCurrentAnim();
+      spriteObj.color = rgb(255, 255, 230); 
+      spriteObj.scale = vec2(1.25); 
+    };
+    monster.setSad = () => { 
+      cancelCurrentAnim();
+      spriteObj.color = rgb(200, 200, 255); 
+      spriteObj.scale = vec2(1.1); 
+    };
     monster.setEating = () => { 
+      cancelCurrentAnim();
       spriteObj.color = rgb(255, 255, 220);
       let phase = 0;
-      const anim = onUpdate(() => {
+      currentAnim = onUpdate(() => {
         phase += dt() * 15;
         spriteObj.scale = vec2(1.2 + Math.sin(phase) * 0.1);
         if (phase > Math.PI * 2) {
-          anim.cancel();
+          currentAnim.cancel();
+          currentAnim = null;
           spriteObj.scale = vec2(1.2);
           monster.setIdle();
         }

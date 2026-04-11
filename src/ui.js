@@ -100,19 +100,6 @@ export function createUI(state) {
     color(200, 200, 200),
   ]);
 
-  // 提示文字
-  const hintContainer = add([
-    pos(width() - 20, height() - 20),
-    anchor('botright'),
-    z(30),
-    fixed(),
-  ]);
-  
-  hintContainer.add([
-    text('拖拽食物到小怪物嘴里投喂！', { size: 14 }),
-    color(150, 150, 170),
-  ]);
-
   // 全屏按钮背景
   const fullscreenBtnBg = add([
     rect(100, 36),

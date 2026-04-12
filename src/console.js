@@ -347,16 +347,20 @@ export function initConsoleControls() {
      * 列出所有配方
      * @returns {Array} 配方列表
      */
-    listRecipes() {
-      const recipes = getAllRecipes();
-      console.log('=== 所有配方 ===');
-      recipes.forEach(r => {
-        const unlocked = isRecipeUnlocked(r.id);
-        const status = unlocked ? '✅已解锁' : '🔒未解锁';
-        console.log(`  ${r.name} (${r.rarity}): ${r.ingredients.join(' + ')} = ${r.points}分 ${status}`);
-      });
-      return recipes;
-    },
+      listRecipes() {
+        const recipes = getAllRecipes();
+        console.log('=== 所有配方 ===');
+        recipes.forEach(r => {
+          const unlocked = isRecipeUnlocked(r.id);
+          const status = unlocked ? '✅已解锁' : '🔒未解锁';
+          const condEntries = Object.entries(r.conditions || {});
+          const condText = condEntries.length > 0
+            ? condEntries.map(([k, v]) => `${k}>=${v}`).join(' + ')
+            : '任意3食材';
+          console.log(`  ${r.name} (${r.rarity}, P${r.priority || 0}): ${condText} = ${r.points}分 ${status}`);
+        });
+        return recipes;
+      },
     
     /**
      * 解锁指定配方

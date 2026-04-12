@@ -22,6 +22,12 @@ let throwVelocity = { x: 0, y: 0 };
 // 轨迹点
 let trailPoints = [];
 
+function getInteractiveFoods() {
+  const baseFoods = getActiveFoods();
+  const dishFoods = get('crafted-dish') || [];
+  return [...baseFoods, ...dishFoods];
+}
+
 // 检查是否点击了全屏按钮区域
 function isClickOnFullscreenBtn(mouse) {
   // 始终使用当前窗口尺寸计算按钮位置
@@ -115,7 +121,7 @@ export function initDragSystem(monster, state) {
     }
 
     // 检查是否点击到了食物（使用距离检测）
-    const foods = getActiveFoods();
+    const foods = getInteractiveFoods();
     for (const food of foods) {
       const foodSize = food.foodType?.size || 20;
       const actualSize = Array.isArray(foodSize) ? Math.max(foodSize[0], foodSize[1]) : foodSize;
@@ -244,7 +250,7 @@ function endDrag() {
   }
   
   // 检查是否在合成炉区域
-  if (isFoodInForge(draggedFood)) {
+  if (!draggedFood.isCraftedDish && isFoodInForge(draggedFood)) {
     // 尝试添加到合成炉
     const added = addFoodToForge(draggedFood);
     if (added) {
@@ -698,22 +704,17 @@ function triggerCraft() {
     // 获取食物类型键
     const foodTypeKeys = foods.map(food => food.typeKey);
 
-    // 检查配方
+    // 维度配方匹配（优先级高者胜）
     const recipe = checkRecipe(foodTypeKeys);
 
-    if (recipe) {
-      // 配方匹配成功
-      const isNewUnlock = unlockRecipe(recipe.id);
-
-      // 显示合成特效
-      showCraftSuccessEffect(recipe, isNewUnlock);
-
-      // 生成合成产物
-      createCraftedItem(recipe);
-    } else {
-      // 配方不匹配
+    if (!recipe) {
       showCraftFailEffect();
+      return;
     }
+
+    const isNewUnlock = unlockRecipe(recipe.id);
+    showCraftSuccessEffect(recipe, isNewUnlock);
+    createCraftedDish(recipe);
   }
 }
 
@@ -748,12 +749,12 @@ function showCraftSuccessEffect(recipe, isNewUnlock) {
   for (let i = 0; i < 12; i++) {
     const angle = (i / 12) * Math.PI * 2;
     const speed = rand(150, 300);
-    const color = rarityConfig.color;
+    const burstColor = rarityConfig.color;
 
     add([
       circle(rand(5, 12)),
       pos(forgePos),
-      color(color[0], color[1], color[2]),
+      color(burstColor[0], burstColor[1], burstColor[2]),
       opacity(1),
       lifespan(0.8),
       z(45),
@@ -786,7 +787,7 @@ function showCraftSuccessEffect(recipe, isNewUnlock) {
   // 如果是新解锁的配方
   if (isNewUnlock) {
     add([
-      text('🎉 解锁新配方!', { size: 24 }),
+      text('🎉 解锁新料理!', { size: 24 }),
       pos(forgePos.x, forgePos.y - 140),
       anchor('center'),
       color(255, 215, 0),
@@ -879,41 +880,43 @@ function showCraftFailEffect() {
   }
 }
 
-// 创建合成产物
-function createCraftedItem(recipe) {
+// 创建料理产物（视觉展示，不纳入食材系统）
+function createCraftedDish(recipe) {
   const forgePos = getForgeElement()?.pos || vec2(150, height() / 2);
+  const size = 40;
 
-  const craftedFood = add([
+  const craftedDish = add([
     pos(forgePos.x, forgePos.y),
     anchor('center'),
     z(10),
     opacity(1),
     rotate(0),
-    'food',
-    'crafted',
+    'crafted-dish',
     {
+      recipeId: recipe.id,
+      dishName: recipe.name,
+      isCraftedDish: true,
       foodType: {
         name: recipe.name,
         color: recipe.color,
         points: recipe.points,
-        category: recipe.category,
+        category: 'dish',
         glow: recipe.glow,
+        size: size,
       },
-      typeKey: recipe.id,
     },
   ]);
 
   const c = recipe.color;
-  const size = 40;
 
-  craftedFood.add([
+  craftedDish.add([
     circle(size),
     color(c[0], c[1], c[2]),
     anchor('center'),
   ]);
 
   if (recipe.glow) {
-    craftedFood.add([
+    craftedDish.add([
       circle(size + 10),
       color(c[0], c[1], c[2]),
       opacity(0.3),
@@ -922,12 +925,12 @@ function createCraftedItem(recipe) {
   }
 
   // 弹出动画
-  craftedFood.use({
+  craftedDish.use({
     bounceTime: 0,
     targetX: width() / 2,
     targetY: height() / 2 - 100,
     update() {
-      if (!craftedFood.exists()) return;
+      if (!craftedDish.exists()) return;
       this.bounceTime += dt();
 
       const bounce = Math.sin(this.bounceTime * 5) * Math.exp(-this.bounceTime * 3) * 50;
@@ -944,6 +947,22 @@ function createCraftedItem(recipe) {
       }
     }
   });
+
+  // 显示料理名称
+  add([
+    text(`料理：${recipe.name}`, { size: 18 }),
+    pos(forgePos.x, forgePos.y - 95),
+    anchor('center'),
+    color(255, 245, 210),
+    opacity(1),
+    lifespan(1.3),
+    z(20),
+    {
+      update() {
+        this.pos.y -= 30 * dt();
+      }
+    },
+  ]);
 
   // 显示得分
   add([
@@ -977,7 +996,7 @@ function updateFoodTooltip() {
   if (!tooltip) return;
 
   const mouse = mousePos();
-  const foods = getActiveFoods();
+  const foods = getInteractiveFoods();
 
   // 拖拽时：显示被拖拽食物的名字，瞬时跟随
   if (isDragging && draggedFood && draggedFood.foodType) {

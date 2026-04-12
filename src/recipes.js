@@ -1,6 +1,6 @@
 /**
  * 合成配方系统
- * 定义所有可用的合成配方
+ * 使用“维度阈值 + 优先级”匹配料理
  */
 
 import { FOOD_TYPES } from './food.js';
@@ -11,147 +11,136 @@ let recipeState = {
   discoveredCombinations: new Set(), // 已发现的组合
 };
 
-// 配方定义
+const DIMENSION_LABELS = {
+  nature: '自然度',
+  liquid: '液体度',
+  weird: '怪异度',
+  delicious: '美味度',
+  abstract: '抽象度',
+};
+
+// 配方定义（料理系统）
+// conditions: 满足条件即可命中；多个命中时选 priority 更高的
 export const RECIPES = {
-  // 传说级配方
-  magicWand: {
-    id: 'magicWand',
-    name: '魔法法杖',
-    nameEn: 'Magic Wand',
-    ingredients: ['branch', 'leaf', 'crystal'],
-    points: 120,
-    rarity: 'legendary',
-    description: '古老而强大的魔法武器',
-    category: 'weapon',
-    effect: '魔法光环',
-    color: [150, 200, 255],
-    glow: true,
-  },
-
-  cosmicHeart: {
-    id: 'cosmicHeart',
-    name: '宇宙之心',
-    nameEn: 'Cosmic Heart',
-    ingredients: ['heart', 'moon', 'sun'],
-    points: 150,
-    rarity: 'legendary',
-    description: '融合日月星辰的神秘之心',
-    category: 'cosmic',
-    effect: '恢复全部饱食度',
-    color: [255, 200, 220],
-    glow: true,
-  },
-
-  starGem: {
-    id: 'starGem',
-    name: '星光宝石',
-    nameEn: 'Star Gem',
-    ingredients: ['star', 'rainbowWater', 'goldWater'],
-    points: 130,
-    rarity: 'legendary',
-    description: '凝结了星光与彩虹的宝石',
-    category: 'gem',
-    effect: '双倍分数加成',
-    color: [255, 255, 200],
-    glow: true,
-  },
-
-  // 稀有级配方
-  resurrectionRing: {
-    id: 'resurrectionRing',
-    name: '复活戒指',
-    nameEn: 'Ring of Resurrection',
-    ingredients: ['rock', 'bone', 'eyeball'],
-    points: 90,
-    rarity: 'rare',
-    description: '蕴含神秘力量的戒指',
-    category: 'accessory',
-    effect: '保护光环',
-    color: [200, 180, 220],
-    glow: true,
-  },
-
-  universalPotion: {
-    id: 'universalPotion',
-    name: '万能药水',
-    nameEn: 'Universal Potion',
-    ingredients: ['dirtyWater', 'poison', 'goldWater'],
-    points: 85,
-    rarity: 'rare',
-    description: '能治愈一切的神奇药水',
-    category: 'potion',
-    effect: '大幅恢复饱食度',
-    color: [180, 100, 255],
-    glow: true,
-  },
-
-  aiCore: {
-    id: 'aiCore',
-    name: 'AI核心',
-    nameEn: 'AI Core',
-    ingredients: ['battery', 'phone', 'code'],
-    points: 95,
-    rarity: 'rare',
-    description: '高科技的人工智能核心',
-    category: 'tech',
-    effect: '科技感表情',
-    color: [0, 255, 200],
-    glow: true,
-  },
-
-  grandFeast: {
-    id: 'grandFeast',
-    name: '盛宴大餐',
-    nameEn: 'Grand Feast',
-    ingredients: ['burger', 'barbecue', 'pizza'],
-    points: 110,
-    rarity: 'rare',
-    description: '足以喂饱一个军队的美味',
-    category: 'food',
-    effect: '大幅增加饱食度和连击',
-    color: [255, 200, 150],
-    glow: true,
-  },
-
-  // 普通级配方
-  explosionBomb: {
-    id: 'explosionBomb',
-    name: '爆炸炸弹',
-    nameEn: 'Explosion Bomb',
-    ingredients: ['mud', 'gunpowder', 'lava'],
-    points: 75,
+  // 兜底料理：保证随手合成也有结果
+  mixedStew: {
+    id: 'mixedStew',
+    name: '杂烩',
+    points: 24,
     rarity: 'common',
-    description: '危险的爆炸物',
-    category: 'weapon',
-    effect: '爆炸特效',
-    color: [100, 80, 60],
+    priority: 1,
+    conditions: {},
+    description: '什么都能炖进去，至少能吃',
+    category: 'dish',
+    effect: '小幅恢复饱食度',
+    color: [170, 150, 120],
   },
 
-  sweetDream: {
-    id: 'sweetDream',
-    name: '甜蜜梦境',
-    nameEn: 'Sweet Dream',
-    ingredients: ['cake', 'candy', 'juice'],
-    points: 80,
+  clearBroth: {
+    id: 'clearBroth',
+    name: '清汤',
+    points: 32,
     rarity: 'common',
-    description: '甜到让人沉睡的美味',
-    category: 'food',
-    effect: '困倦但开心',
-    color: [255, 180, 220],
+    priority: 5,
+    conditions: { liquid: 1 },
+    description: '一口热汤，暖胃续命',
+    category: 'dish',
+    effect: '恢复饱食度',
+    color: [130, 170, 230],
+  },
+
+  weirdPaste: {
+    id: 'weirdPaste',
+    name: '怪味糊',
+    points: 35,
+    rarity: 'common',
+    priority: 6,
+    conditions: { weird: 1 },
+    description: '味道离谱，但怪兽很受用',
+    category: 'dish',
+    effect: '中等恢复饱食度',
+    color: [150, 140, 170],
+  },
+
+  wildSalad: {
+    id: 'wildSalad',
+    name: '野生沙拉',
+    points: 40,
+    rarity: 'common',
+    priority: 8,
+    conditions: { nature: 2 },
+    description: '新鲜自然风味',
+    category: 'dish',
+    effect: '恢复饱食度并少量加分',
+    color: [100, 190, 120],
+  },
+
+  elementSoup: {
+    id: 'elementSoup',
+    name: '元素浓汤',
+    points: 46,
+    rarity: 'common',
+    priority: 9,
+    conditions: { nature: 1, liquid: 1 },
+    description: '自然与液体的稳定融合',
+    category: 'dish',
+    effect: '较高恢复饱食度',
+    color: [120, 200, 190],
+  },
+
+  heartyPlatter: {
+    id: 'heartyPlatter',
+    name: '大餐拼盘',
+    points: 55,
+    rarity: 'rare',
+    priority: 10,
+    conditions: { delicious: 2 },
+    description: '高热量高满足感',
+    category: 'dish',
+    effect: '高额饱食恢复',
+    color: [240, 180, 120],
     glow: true,
   },
 
-  wisdomKey: {
-    id: 'wisdomKey',
-    name: '智慧之钥',
-    nameEn: 'Key of Wisdom',
-    ingredients: ['book', 'key', 'musicNote'],
-    points: 88,
-    rarity: 'common',
-    description: '开启智慧之门的钥匙',
-    category: 'item',
-    effect: '变聪明',
-    color: [218, 165, 32],
+  voidPudding: {
+    id: 'voidPudding',
+    name: '虚空布丁',
+    points: 58,
+    rarity: 'rare',
+    priority: 12,
+    conditions: { abstract: 2 },
+    description: '口感像在吞食夜空',
+    category: 'dish',
+    effect: '恢复饱食度并额外加分',
+    color: [170, 120, 255],
+    glow: true,
+  },
+
+  cursedRoast: {
+    id: 'cursedRoast',
+    name: '诅咒烤盘',
+    points: 66,
+    rarity: 'rare',
+    priority: 18,
+    conditions: { delicious: 1, weird: 1, abstract: 1 },
+    description: '香味诱人，后劲诡异',
+    category: 'dish',
+    effect: '高分奖励',
+    color: [220, 120, 170],
+    glow: true,
+  },
+
+  breakfastEgg: {
+    id: 'breakfastEgg',
+    name: '早餐蛋',
+    points: 76,
+    rarity: 'legendary',
+    priority: 20,
+    conditions: { delicious: 1, weird: 1, liquid: 1 },
+    description: '在多个候选中以高优先级胜出',
+    category: 'dish',
+    effect: '大幅恢复饱食度并加分',
+    color: [255, 225, 130],
     glow: true,
   },
 };
@@ -191,19 +180,56 @@ export function initRecipeSystem() {
 }
 
 /**
- * 检查配方是否匹配
+ * 根据食材计算维度
  */
-export function checkRecipe(foodTypeKeys) {
-  const sortedKeys = [...foodTypeKeys].sort().join(',');
+function calculateDimensions(foodTypeKeys) {
+  const totals = {
+    nature: 0,
+    liquid: 0,
+    weird: 0,
+    delicious: 0,
+    abstract: 0,
+  };
 
-  for (const [recipeId, recipe] of Object.entries(RECIPES)) {
-    const sortedIngredients = [...recipe.ingredients].sort().join(',');
-    if (sortedKeys === sortedIngredients) {
-      return recipe;
+  for (const key of foodTypeKeys) {
+    const food = FOOD_TYPES[key];
+    if (!food || !food.category) continue;
+    if (totals[food.category] !== undefined) {
+      totals[food.category] += 1;
     }
   }
 
-  return null;
+  return totals;
+}
+
+function isMatchByConditions(conditions, dimensions) {
+  return Object.entries(conditions || {}).every(([dim, min]) => {
+    return (dimensions[dim] || 0) >= min;
+  });
+}
+
+/**
+ * 检查配方是否匹配（维度阈值 + 优先级）
+ */
+export function checkRecipe(foodTypeKeys) {
+  if (!Array.isArray(foodTypeKeys) || foodTypeKeys.length === 0) {
+    return null;
+  }
+
+  const dimensions = calculateDimensions(foodTypeKeys);
+  const candidates = getAllRecipes().filter(recipe => isMatchByConditions(recipe.conditions, dimensions));
+
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  candidates.sort((a, b) => {
+    const p = (b.priority || 0) - (a.priority || 0);
+    if (p !== 0) return p;
+    return (b.points || 0) - (a.points || 0);
+  });
+
+  return candidates[0];
 }
 
 /**
@@ -238,30 +264,13 @@ export function getAllRecipes() {
 export function getRecipeHint(recipeId) {
   const recipe = RECIPES[recipeId];
   if (!recipe) return '';
-
-  const categoryNames = {
-    nature: '自然物品',
-    liquid: '液体',
-    weird: '奇怪物品',
-    delicious: '美味食物',
-    abstract: '抽象物品',
-  };
-
-  const categories = recipe.ingredients.map(ing => {
-    const foodType = FOOD_TYPES[ing];
-    return foodType ? foodType.category : 'unknown';
-  });
-
-  const categoryCount = {};
-  categories.forEach(cat => {
-    categoryCount[cat] = (categoryCount[cat] || 0) + 1;
-  });
-
-  const hints = [];
-  for (const [category, count] of Object.entries(categoryCount)) {
-    hints.push(`${count}个${categoryNames[category] || category}`);
+  const conditions = recipe.conditions || {};
+  const entries = Object.entries(conditions);
+  if (entries.length === 0) {
+    return '需要：任意 3 个食材';
   }
 
+  const hints = entries.map(([dim, count]) => `${DIMENSION_LABELS[dim] || dim}≥${count}`);
   return `需要：${hints.join(' + ')}`;
 }
 

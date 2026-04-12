@@ -937,5 +937,7 @@ function drawFoodShape(food, foodType) {
 
 // 获取活跃食物列表
 export function getActiveFoods() {
+  // 清理已销毁的食物，避免出现“看不见但可交互/可提示”的幽灵对象
+  activeFoods = activeFoods.filter(food => food && food.exists && food.exists());
   return activeFoods;
 }

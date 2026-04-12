@@ -3,7 +3,6 @@
  */
 
 import { RARITY_CONFIG, getAllRecipes, isRecipeUnlocked, getRecipeHint, getRecipeProgress } from './recipes.js';
-import { FOOD_TYPES } from './food.js';
 import { registerRecipePanelFuncs } from './console.js';
 
 let isOpen = false;
@@ -68,20 +67,8 @@ function renderRecipeList() {
     item.className = 'recipe-item';
     item.style.borderColor = rgbToCss(rCfg.color);
 
-    // 构建食材HTML
-    let ingredientsHtml = '';
-    if (unlocked && recipe.ingredients) {
-      recipe.ingredients.forEach(ing => {
-        const f = FOOD_TYPES[ing];
-        if (f) {
-          ingredientsHtml += `<div class="recipe-ing-icon" style="background: ${rgbToCss(f.color)}" title="${f.name}"></div>`;
-        }
-      });
-    } else {
-      for (let i = 0; i < 3; i++) {
-        ingredientsHtml += `<div class="recipe-ing-icon">?</div>`;
-      }
-    }
+    const condText = unlocked ? getRecipeHint(recipe.id) : '💡 条件未公开';
+    const priority = recipe.priority || 0;
 
     item.innerHTML = `
       <div class="recipe-item-header">
@@ -90,11 +77,11 @@ function renderRecipeList() {
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <span class="recipe-item-points${unlocked ? '' : ' locked'}">${unlocked ? recipe.points + ' 分' : '???'}</span>
-        <div class="recipe-ingredients">${ingredientsHtml}</div>
+        <div class="recipe-ingredients"><span class="recipe-desc">优先级 ${priority}</span></div>
       </div>
       ${unlocked 
-        ? `<div class="recipe-desc">${recipe.description || ''}</div>` 
-        : `<div class="recipe-hint">💡 ${getRecipeHint(recipe.id)}</div>`
+        ? `<div class="recipe-desc">${recipe.description || ''}</div><div class="recipe-hint">${condText}</div>` 
+        : `<div class="recipe-hint">${condText}</div>`
       }
     `;
 

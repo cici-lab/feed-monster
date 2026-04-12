@@ -16,17 +16,17 @@ const MONSTER_PREVIEWS = {
     svg: '/assets/monsters/eyemonster/body.svg',
     bgGradient: 'linear-gradient(135deg, #7a1818, #3a0808)',
   },
-  default: {
-    svg: '/assets/monster-default.svg',
-    bgGradient: 'linear-gradient(135deg, #2d9a52, #1a5a32)',
+  slimemon: {
+    svg: '/assets/monsters/slimemon/body.svg',
+    bgGradient: 'linear-gradient(135deg, #60d8b0, #208060)',
   },
-  mike: {
-    svg: '/assets/monster-mike.svg',
-    bgGradient: 'linear-gradient(135deg, #50d878, #1a8848)',
+  ghostmon: {
+    svg: '/assets/monsters/ghostmon/body.svg',
+    bgGradient: 'linear-gradient(135deg, #c0c0e8, #8080c0)',
   },
-  fang: {
-    svg: '/assets/monster-fang.svg',
-    bgGradient: 'linear-gradient(135deg, #8858b8, #4a2080)',
+  furballmon: {
+    svg: '/assets/monsters/furballmon/body.svg',
+    bgGradient: 'linear-gradient(135deg, #f8f0f8, #d0c0d0)',
   },
 };
 
@@ -81,7 +81,7 @@ function renderMonsterGrid() {
     card.className = 'monster-card';
     card.dataset.monsterId = id;
     
-    const preview = MONSTER_PREVIEWS[id] || MONSTER_PREVIEWS.default;
+    const preview = MONSTER_PREVIEWS[id] || MONSTER_PREVIEWS.eyemonster;
     
     card.innerHTML = `
       <div class="monster-card-preview" style="background: ${preview.bgGradient}">
@@ -107,6 +107,8 @@ function getAbilityText(ability) {
     'recipe_hint': '可查看配方提示',
     'weird_food_bonus': '奇怪食物友好',
     'all_seeing': '可见隐藏食材',
+    'jelly_absorb': '果冻吸收',
+    'fluffy_eat': '毛绒吞噬',
   };
   return abilities[ability] || '基础怪兽';
 }

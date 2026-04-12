@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220" width="200" height="220">
+  <defs>
+    <!-- 幽灵身体渐变 -->
+    <radialGradient id="ghostGrad" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" style="stop-color:#e8e0f8;stop-opacity:0.95"/>
+      <stop offset="50%" style="stop-color:#c8c0e8;stop-opacity:0.9"/>
+      <stop offset="100%" style="stop-color:#a0a0c8;stop-opacity:0.85"/>
+    </radialGradient>
+    <!-- 发光效果 -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <!-- 柔和阴影 -->
+    <filter id="softShadow">
+      <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#4040a0" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- 地面阴影 -->
+  <ellipse cx="100" cy="200" rx="45" ry="10" fill="#2020a0" opacity="0.25"/>
+  
+  <!-- 幽灵主体 - 椭圆形头部 -->
+  <ellipse cx="100" cy="90" rx="65" ry="70" fill="url(#ghostGrad)" filter="url(#softShadow)"/>
+  
+  <!-- 底部波浪飘边 -->
+  <path d="M 35 140 
+           Q 35 155 45 160 Q 55 165 55 150 
+           Q 55 165 65 160 Q 75 155 75 145 
+           Q 75 165 85 165 Q 95 165 95 150 
+           Q 95 165 105 165 Q 115 165 115 145 
+           Q 115 155 125 160 Q 135 165 135 150 
+           Q 135 165 145 160 Q 155 155 155 145
+           Q 155 165 160 158 Q 165 150 165 140
+           L 165 130 L 35 130 Z" 
+        fill="url(#ghostGrad)" opacity="0.9"/>
+  
+  <!-- 飘边末端 -->
+  <circle cx="45" cy="160" r="8" fill="#b8b0d8" opacity="0.9"/>
+  <circle cx="65" cy="158" r="8" fill="#b8b0d8" opacity="0.85"/>
+  <circle cx="95" cy="162" r="8" fill="#b8b0d8" opacity="0.9"/>
+  <circle cx="125" cy="158" r="8" fill="#b8b0d8" opacity="0.85"/>
+  <circle cx="155" cy="158" r="8" fill="#b8b0d8" opacity="0.9"/>
+  
+  <!-- 身体高光 -->
+  <ellipse cx="75" cy="60" rx="30" ry="35" fill="#ffffff" opacity="0.3"/>
+  <ellipse cx="85" cy="50" rx="12" ry="15" fill="#ffffff" opacity="0.5"/>
+</svg>

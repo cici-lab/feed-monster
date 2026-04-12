@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <!-- 半透明果冻渐变 -->
+    <radialGradient id="slimeGrad" cx="40%" cy="35%" r="70%">
+      <stop offset="0%" style="stop-color:#a0ffe0;stop-opacity:0.9"/>
+      <stop offset="50%" style="stop-color:#60d8b0;stop-opacity:0.85"/>
+      <stop offset="100%" style="stop-color:#30a080;stop-opacity:0.8"/>
+    </radialGradient>
+    <!-- 内部光泽 -->
+    <radialGradient id="innerGlow" cx="30%" cy="25%" r="50%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.6"/>
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0"/>
+    </radialGradient>
+    <!-- 阴影 -->
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#105030" flood-opacity="0.4"/>
+    </filter>
+    <!-- 果冻质感 -->
+    <filter id="jelly">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1" result="blur"/>
+      <feSpecularLighting in="blur" surfaceScale="5" specularConstant="0.8" lighting-color="#ffffff" result="spec">
+        <fePointLight x="80" y="60" z="100"/>
+      </feSpecularLighting>
+      <feComposite in="SourceGraphic" in2="spec" operator="arithmetic" k1="1" k2="1" k3="0" k4="0"/>
+    </filter>
+  </defs>
+  
+  <!-- 地面阴影 -->
+  <ellipse cx="100" cy="180" rx="60" ry="12" fill="#083020" opacity="0.3"/>
+  
+  <!-- 身体主体 - Q弹果冻状 -->
+  <ellipse cx="100" cy="100" rx="75" ry="85" fill="url(#slimeGrad)" filter="url(#shadow)"/>
+  
+  <!-- 身体边缘高光 -->
+  <ellipse cx="100" cy="100" rx="75" ry="85" fill="none" stroke="#80ffd0" stroke-width="2" opacity="0.5"/>
+  
+  <!-- 内部光泽 -->
+  <ellipse cx="75" cy="70" rx="35" ry="40" fill="url(#innerGlow)"/>
+  
+  <!-- 底部滴落效果 -->
+  <ellipse cx="100" cy="175" rx="20" ry="15" fill="#50c8a0" opacity="0.6"/>
+  <path d="M 90 175 Q 95 185 100 180 Q 105 185 110 175" fill="#50c8a0" opacity="0.4"/>
+</svg>

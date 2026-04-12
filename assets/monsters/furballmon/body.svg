@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <!-- 毛发渐变 -->
+    <radialGradient id="furGrad" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="50%" style="stop-color:#f8f0f8"/>
+      <stop offset="100%" style="stop-color:#e0d0e0"/>
+    </radialGradient>
+    <!-- 柔和阴影 -->
+    <filter id="softShadow">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#8050a0" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- 地面阴影 -->
+  <ellipse cx="100" cy="175" rx="50" ry="10" fill="#8040a0" opacity="0.25"/>
+  
+  <!-- 毛球主体 -->
+  <circle cx="100" cy="100" r="70" fill="url(#furGrad)" filter="url(#softShadow)"/>
+  
+  <!-- 毛发纹理 - 多层短毛 -->
+  <g fill="none" stroke="#d0c0d0" stroke-width="2" stroke-linecap="round" opacity="0.5">
+    <!-- 外层毛发 -->
+    <path d="M 30 90 Q 25 85 30 80"/>
+    <path d="M 40 60 Q 35 55 40 50"/>
+    <path d="M 65 40 Q 60 35 65 30"/>
+    <path d="M 100 25 Q 100 20 100 15"/>
+    <path d="M 135 40 Q 140 35 135 30"/>
+    <path d="M 160 60 Q 165 55 160 50"/>
+    <path d="M 170 90 Q 175 85 170 80"/>
+    <path d="M 170 110 Q 175 115 170 120"/>
+    <path d="M 160 140 Q 165 145 160 150"/>
+    <path d="M 130 160 Q 135 165 130 170"/>
+    <path d="M 100 170 Q 100 175 100 180"/>
+    <path d="M 70 160 Q 65 165 70 170"/>
+    <path d="M 40 140 Q 35 145 40 150"/>
+    <path d="M 30 110 Q 25 115 30 120"/>
+  </g>
+  
+  <!-- 内层毛发细节 -->
+  <g fill="none" stroke="#e8e0e8" stroke-width="1.5" stroke-linecap="round" opacity="0.4">
+    <path d="M 50 70 Q 45 68 50 65"/>
+    <path d="M 80 45 Q 78 42 82 40"/>
+    <path d="M 120 45 Q 122 42 118 40"/>
+    <path d="M 150 70 Q 155 68 150 65"/>
+    <path d="M 150 130 Q 155 132 150 135"/>
+    <path d="M 50 130 Q 45 132 50 135"/>
+  </g>
+  
+  <!-- 高光 -->
+  <ellipse cx="80" cy="60" rx="25" ry="20" fill="#ffffff" opacity="0.4"/>
+</svg>

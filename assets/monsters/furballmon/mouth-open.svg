@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 45" width="60" height="45">
+  <defs>
+    <radialGradient id="mouthGrad" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" style="stop-color="#503050"/>
+      <stop offset="100%" style="stop-color="#301030"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- 张开的嘴 -->
+  <ellipse cx="30" cy="22" rx="22" ry="16" fill="url(#mouthGrad)"/>
+  <ellipse cx="30" cy="22" rx="22" ry="16" fill="none" stroke="#c0a0c0" stroke-width="2"/>
+  
+  <!-- 尖尖的小虎牙 -->
+  <polygon points="18,16 22,8 26,16" fill="#f0e0f0"/>
+  <polygon points="34,16 38,8 42,16" fill="#f0e0f0"/>
+  
+  <!-- 舌头 -->
+  <ellipse cx="30" cy="32" rx="10" ry="8" fill="#e080a0" opacity="0.7"/>
+</svg>

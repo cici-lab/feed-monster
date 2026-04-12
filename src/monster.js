@@ -50,38 +50,87 @@ export const MONSTER_TYPES = {
     growthRate: 1.0,
   },
   
-  // 保留旧怪物配置（向后兼容）
-  default: {
-    id: 'default',
-    name: '小绿怪',
-    description: '呆萌可爱的小家伙',
-    sprite: 'monster-default',
-    specialAbility: null,
-    hungerDrain: 1.0,
+  // 史莱姆魔 - 半透明果冻生物
+  slimemon: {
+    id: 'slimemon',
+    name: '史莱姆魔',
+    description: '半透明的果冻生物，体内漂浮着星星和气泡',
+    category: 'weird',
+    parts: {
+      body: { sprite: 'monsters/slimemon/body', anchor: 'center', z: 0 },
+      coreStar: { sprite: 'monsters/slimemon/core-star', anchor: 'center', z: 2, pos: { x: 0, y: -10 } },
+      mouth: { 
+        closed: { sprite: 'monsters/slimemon/mouth-closed', anchor: 'center', z: 1, pos: { x: 0, y: 25 } },
+        open: { sprite: 'monsters/slimemon/mouth-open', anchor: 'center', z: 1, pos: { x: 0, y: 28 } }
+      },
+      eyes: [
+        { sprite: 'monsters/slimemon/big-eye', anchor: 'center', z: 3, pos: { x: -18, y: -8 }, scale: 0.9 },
+        { sprite: 'monsters/slimemon/small-eye', anchor: 'center', z: 3, pos: { x: 22, y: -2 }, scale: 0.75 },
+      ],
+      floaties: [
+        { sprite: 'monsters/slimemon/floatie', anchor: 'center', z: 1, pos: { x: -30, y: -20 }, scale: 0.6 },
+        { sprite: 'monsters/slimemon/bone', anchor: 'center', z: 1, pos: { x: 25, y: 15 }, scale: 0.5 },
+        { sprite: 'monsters/slimemon/floatie', anchor: 'center', z: 1, pos: { x: -15, y: 20 }, scale: 0.4 },
+      ]
+    },
+    specialAbility: 'jelly_absorb',
+    hungerDrain: 0.9,
     growthRate: 1.0,
-    legacy: true, // 标记为旧版单图模式
   },
   
-  mike: {
-    id: 'mike',
-    name: '大眼仔',
-    description: '只有一只巨大眼睛的怪物',
-    sprite: 'monster-mike',
+  // 幽灵魔 - 漂浮的小幽灵
+  ghostmon: {
+    id: 'ghostmon',
+    name: '幽灵魔',
+    description: '漂浮的小幽灵，戴着破旧的巫师帽',
+    category: 'weird',
+    parts: {
+      body: { sprite: 'monsters/ghostmon/body', anchor: 'center', z: 0, pos: { x: 0, y: 10 } },
+      witchHat: { sprite: 'monsters/ghostmon/witch-hat', anchor: 'center', z: 4, pos: { x: 5, y: -50 }, scale: 0.8 },
+      eye: { sprite: 'monsters/ghostmon/eye', anchor: 'center', z: 2, pos: { x: 0, y: -5 } },
+      mouth: { 
+        closed: { sprite: 'monsters/ghostmon/mouth-closed', anchor: 'center', z: 1, pos: { x: 0, y: 25 } },
+        open: { sprite: 'monsters/ghostmon/mouth-open', anchor: 'center', z: 1, pos: { x: 0, y: 28 } }
+      },
+      tail: { sprite: 'monsters/ghostmon/tail', anchor: 'top', z: -1, pos: { x: -15, y: 70 }, rotation: 20 },
+      sparkles: [
+        { sprite: 'monsters/ghostmon/sparkle', anchor: 'center', z: 5, pos: { x: 35, y: -20 }, scale: 0.5 },
+        { sprite: 'monsters/ghostmon/sparkle', anchor: 'center', z: 5, pos: { x: -30, y: 30 }, scale: 0.4 },
+      ]
+    },
     specialAbility: 'recipe_hint',
     hungerDrain: 0.8,
     growthRate: 1.0,
-    legacy: true,
   },
   
-  fang: {
-    id: 'fang',
-    name: '毛毛怪',
-    description: '紫色的毛茸茸小怪物',
-    sprite: 'monster-fang',
-    specialAbility: 'weird_food_bonus',
-    hungerDrain: 1.2,
+  // 毛球魔 - 毛茸茸团子
+  furballmon: {
+    id: 'furballmon',
+    name: '毛球魔',
+    description: '一团毛茸茸的生物，眼睛和嘴巴从毛里探出来',
+    category: 'weird',
+    parts: {
+      body: { sprite: 'monsters/furballmon/body', anchor: 'center', z: 0 },
+      mouth: { 
+        closed: { sprite: 'monsters/furballmon/mouth-closed', anchor: 'center', z: 2, pos: { x: 0, y: 20 } },
+        open: { sprite: 'monsters/furballmon/mouth-open', anchor: 'center', z: 2, pos: { x: 0, y: 22 } }
+      },
+      eyes: [
+        { sprite: 'monsters/furballmon/big-eye', anchor: 'center', z: 3, pos: { x: -12, y: -10 }, scale: 0.85 },
+        { sprite: 'monsters/furballmon/small-eye', anchor: 'center', z: 3, pos: { x: 18, y: -5 }, scale: 0.65 },
+      ],
+      earTufts: [
+        { sprite: 'monsters/furballmon/ear-tuft', anchor: 'bottom', z: 1, pos: { x: -25, y: -55 }, rotation: -15, scale: 0.6 },
+        { sprite: 'monsters/furballmon/ear-tuft', anchor: 'bottom', z: 1, pos: { x: 25, y: -55 }, rotation: 15, scale: 0.6 },
+      ],
+      furStrands: [
+        { sprite: 'monsters/furballmon/fur-strand', anchor: 'center', z: 1, pos: { x: -35, y: 0 }, rotation: -30, scale: 0.8 },
+        { sprite: 'monsters/furballmon/fur-strand', anchor: 'center', z: 1, pos: { x: 35, y: 5 }, rotation: 30, scale: 0.8 },
+      ]
+    },
+    specialAbility: 'fluffy_eat',
+    hungerDrain: 1.1,
     growthRate: 1.0,
-    legacy: true,
   },
 };
 
@@ -231,10 +280,61 @@ export function createMonster(x, y, type = null) {
         parts.body.scale = vec2(breathScale);
       }
       
-      // 核心眼球脉动
+      // 核心眼球脉动（眼魔）
       if (parts.coreEye) {
         const pulseScale = 1 + Math.sin(animationTime * 3) * 0.05;
         parts.coreEye.scale = vec2(pulseScale);
+      }
+      
+      // 核心星星脉动（史莱姆魔）
+      if (parts.coreStar) {
+        const pulseScale = 1 + Math.sin(animationTime * 4) * 0.08;
+        parts.coreStar.scale = vec2(pulseScale);
+      }
+      
+      // 漂浮物旋转（史莱姆魔）
+      if (parts.floaties) {
+        parts.floaties.forEach((f, i) => {
+          const basePos = config.parts.floaties[i].pos;
+          const angle = animationTime * 0.5 + i * 2;
+          const radius = 3;
+          f.pos.x = basePos.x + Math.cos(angle) * radius;
+          f.pos.y = basePos.y + Math.sin(angle) * radius;
+        });
+      }
+      
+      // 巫师帽轻微摆动（幽灵魔）
+      if (parts.witchHat) {
+        parts.witchHat.angle = Math.sin(animationTime * 1.2) * 3;
+      }
+      
+      // 尾巴飘动（幽灵魔）
+      if (parts.tail) {
+        const baseAngle = config.parts.tail.rotation || 20;
+        parts.tail.angle = baseAngle + Math.sin(animationTime * 2) * 10;
+      }
+      
+      // 星尘闪烁（幽灵魔）
+      if (parts.sparkles) {
+        parts.sparkles.forEach((s, i) => {
+          s.opacity = 0.5 + Math.sin(animationTime * 3 + i) * 0.3;
+        });
+      }
+      
+      // 耳朵毛簇摆动（毛球魔）
+      if (parts.earTufts) {
+        parts.earTufts.forEach((t, i) => {
+          const baseRot = config.parts.earTufts[i].rotation;
+          t.angle = baseRot + Math.sin(animationTime * 2 + i) * 8;
+        });
+      }
+      
+      // 长毛飘动（毛球魔）
+      if (parts.furStrands) {
+        parts.furStrands.forEach((f, i) => {
+          const baseRot = config.parts.furStrands[i].rotation;
+          f.angle = baseRot + Math.sin(animationTime * 1.5 + i * 0.5) * 12;
+        });
       }
       
       // 触手摆动
@@ -245,7 +345,7 @@ export function createMonster(x, y, type = null) {
         });
       }
       
-      // 副眼跟随鼠标（微小移动）
+      // 副眼跟随鼠标（眼魔）
       if (parts.subEyes) {
         const mouse = mousePos();
         const dx = (mouse.x - monster.pos.x) * 0.02;
@@ -257,7 +357,28 @@ export function createMonster(x, y, type = null) {
         });
       }
       
-      // 核心眼跟随鼠标
+      // 眼睛跟随鼠标（新怪兽）
+      if (parts.eyes) {
+        const mouse = mousePos();
+        const dx = (mouse.x - monster.pos.x) * 0.015;
+        const dy = (mouse.y - monster.pos.y) * 0.015;
+        parts.eyes.forEach((eye, i) => {
+          const basePos = config.parts.eyes[i].pos;
+          eye.pos.x = basePos.x + dx * (1 - i * 0.3);
+          eye.pos.y = basePos.y + dy * (1 - i * 0.3);
+        });
+      }
+      
+      // 独眼跟随鼠标（幽灵魔）
+      if (parts.eye) {
+        const mouse = mousePos();
+        const dx = (mouse.x - monster.pos.x) * 0.02;
+        const dy = (mouse.y - monster.pos.y) * 0.02;
+        parts.eye.pos.x = config.parts.eye.pos.x + dx;
+        parts.eye.pos.y = config.parts.eye.pos.y + dy;
+      }
+      
+      // 核心眼跟随鼠标（眼魔）
       if (parts.coreEye) {
         const mouse = mousePos();
         const dx = (mouse.x - monster.pos.x) * 0.03;
@@ -291,7 +412,7 @@ export function createMonster(x, y, type = null) {
       if (isBlinking) return;
       isBlinking = true;
       
-      // 缩小眼睛模拟眨眼
+      // 眼魔眨眼
       if (parts.coreEye) {
         const originalScale = parts.coreEye.scale.x;
         let blinkPhase = 0;
@@ -305,6 +426,48 @@ export function createMonster(x, y, type = null) {
           if (blinkPhase > Math.PI * 2) {
             blinkAnim.cancel();
             parts.coreEye.scale = vec2(originalScale);
+            isBlinking = false;
+          }
+        });
+      }
+      
+      // 幽灵魔眨眼
+      if (parts.eye) {
+        const originalScale = parts.eye.scale.x;
+        let blinkPhase = 0;
+        const blinkAnim = onUpdate(() => {
+          blinkPhase += dt() * 20;
+          const scale = blinkPhase < Math.PI ? 
+            originalScale * (1 - Math.sin(blinkPhase) * 0.9) :
+            originalScale;
+          parts.eye.scale = vec2(Math.max(0.1, scale));
+          
+          if (blinkPhase > Math.PI * 2) {
+            blinkAnim.cancel();
+            parts.eye.scale = vec2(originalScale);
+            isBlinking = false;
+          }
+        });
+      }
+      
+      // 史莱姆魔和毛球魔眨眼（多眼）
+      if (parts.eyes) {
+        const originalScales = parts.eyes.map(e => e.scale.x);
+        let blinkPhase = 0;
+        const blinkAnim = onUpdate(() => {
+          blinkPhase += dt() * 20;
+          parts.eyes.forEach((eye, i) => {
+            const scale = blinkPhase < Math.PI ? 
+              originalScales[i] * (1 - Math.sin(blinkPhase) * 0.85) :
+              originalScales[i];
+            eye.scale = vec2(Math.max(0.1, scale));
+          });
+          
+          if (blinkPhase > Math.PI * 2) {
+            blinkAnim.cancel();
+            parts.eyes.forEach((eye, i) => {
+              eye.scale = vec2(originalScales[i]);
+            });
             isBlinking = false;
           }
         });
@@ -391,6 +554,7 @@ function createPartMonster(monster, parts, config) {
       anchor(partConfigs.body.anchor || 'center'),
       pos(partConfigs.body.pos?.x || 0, partConfigs.body.pos?.y || 0),
       z(partConfigs.body.z || 0),
+      scale(partConfigs.body.scale || 1),
     ]);
   }
   
@@ -401,6 +565,53 @@ function createPartMonster(monster, parts, config) {
       anchor(partConfigs.coreEye.anchor || 'center'),
       pos(partConfigs.coreEye.pos?.x || 0, partConfigs.coreEye.pos?.y || 0),
       z(partConfigs.coreEye.z || 2),
+      scale(partConfigs.coreEye.scale || 1),
+    ]);
+  }
+  
+  // 核心星星（史莱姆魔）
+  if (partConfigs.coreStar) {
+    parts.coreStar = monster.add([
+      sprite(partConfigs.coreStar.sprite),
+      anchor(partConfigs.coreStar.anchor || 'center'),
+      pos(partConfigs.coreStar.pos?.x || 0, partConfigs.coreStar.pos?.y || 0),
+      z(partConfigs.coreStar.z || 2),
+      scale(partConfigs.coreStar.scale || 1),
+    ]);
+  }
+  
+  // 独眼（幽灵魔）
+  if (partConfigs.eye) {
+    parts.eye = monster.add([
+      sprite(partConfigs.eye.sprite),
+      anchor(partConfigs.eye.anchor || 'center'),
+      pos(partConfigs.eye.pos?.x || 0, partConfigs.eye.pos?.y || 0),
+      z(partConfigs.eye.z || 2),
+      scale(partConfigs.eye.scale || 1),
+    ]);
+  }
+  
+  // 巫师帽（幽灵魔）
+  if (partConfigs.witchHat) {
+    parts.witchHat = monster.add([
+      sprite(partConfigs.witchHat.sprite),
+      anchor(partConfigs.witchHat.anchor || 'center'),
+      pos(partConfigs.witchHat.pos?.x || 0, partConfigs.witchHat.pos?.y || 0),
+      z(partConfigs.witchHat.z || 4),
+      scale(partConfigs.witchHat.scale || 1),
+      rotate(partConfigs.witchHat.rotation || 0),
+    ]);
+  }
+  
+  // 尾巴/飘带
+  if (partConfigs.tail) {
+    parts.tail = monster.add([
+      sprite(partConfigs.tail.sprite),
+      anchor(partConfigs.tail.anchor || 'top'),
+      pos(partConfigs.tail.pos?.x || 0, partConfigs.tail.pos?.y || 0),
+      z(partConfigs.tail.z || -1),
+      rotate(partConfigs.tail.rotation || 0),
+      scale(partConfigs.tail.scale || 1),
     ]);
   }
   
@@ -411,6 +622,7 @@ function createPartMonster(monster, parts, config) {
       anchor(partConfigs.mouth.closed.anchor || 'center'),
       pos(partConfigs.mouth.closed.pos?.x || 0, partConfigs.mouth.closed.pos?.y || 0),
       z(partConfigs.mouth.closed.z || 1),
+      scale(partConfigs.mouth.closed.scale || 1),
     ]);
   }
   
@@ -421,6 +633,7 @@ function createPartMonster(monster, parts, config) {
       anchor(partConfigs.mouth.open.anchor || 'center'),
       pos(partConfigs.mouth.open.pos?.x || 0, partConfigs.mouth.open.pos?.y || 0),
       z(partConfigs.mouth.open.z || 1),
+      scale(partConfigs.mouth.open.scale || 1),
       opacity(0),
     ]);
   }
@@ -435,6 +648,7 @@ function createPartMonster(monster, parts, config) {
         pos(t.pos?.x || 0, t.pos?.y || 0),
         z(t.z || -1),
         rotate(t.rotation || 0),
+        scale(t.scale || 1),
       ]);
       parts.tentacles.push(tentacle);
     });
@@ -449,6 +663,7 @@ function createPartMonster(monster, parts, config) {
         anchor(f.anchor || 'center'),
         pos(f.pos?.x || 0, f.pos?.y || 0),
         z(f.z || -2),
+        scale(f.scale || 1),
       ]);
       parts.feet.push(foot);
     });
@@ -466,6 +681,83 @@ function createPartMonster(monster, parts, config) {
         scale(e.scale || 1),
       ]);
       parts.subEyes.push(eye);
+    });
+  }
+  
+  // 眼睛（新怪兽用）
+  if (partConfigs.eyes) {
+    parts.eyes = [];
+    partConfigs.eyes.forEach(e => {
+      const eye = monster.add([
+        sprite(e.sprite),
+        anchor(e.anchor || 'center'),
+        pos(e.pos?.x || 0, e.pos?.y || 0),
+        z(e.z || 3),
+        scale(e.scale || 1),
+      ]);
+      parts.eyes.push(eye);
+    });
+  }
+  
+  // 漂浮物（史莱姆魔）
+  if (partConfigs.floaties) {
+    parts.floaties = [];
+    partConfigs.floaties.forEach(f => {
+      const floatie = monster.add([
+        sprite(f.sprite),
+        anchor(f.anchor || 'center'),
+        pos(f.pos?.x || 0, f.pos?.y || 0),
+        z(f.z || 1),
+        scale(f.scale || 1),
+      ]);
+      parts.floaties.push(floatie);
+    });
+  }
+  
+  // 星尘/火花（幽灵魔）
+  if (partConfigs.sparkles) {
+    parts.sparkles = [];
+    partConfigs.sparkles.forEach(s => {
+      const sparkle = monster.add([
+        sprite(s.sprite),
+        anchor(s.anchor || 'center'),
+        pos(s.pos?.x || 0, s.pos?.y || 0),
+        z(s.z || 5),
+        scale(s.scale || 1),
+      ]);
+      parts.sparkles.push(sparkle);
+    });
+  }
+  
+  // 耳朵毛簇（毛球魔）
+  if (partConfigs.earTufts) {
+    parts.earTufts = [];
+    partConfigs.earTufts.forEach(t => {
+      const tuft = monster.add([
+        sprite(t.sprite),
+        anchor(t.anchor || 'bottom'),
+        pos(t.pos?.x || 0, t.pos?.y || 0),
+        z(t.z || 1),
+        rotate(t.rotation || 0),
+        scale(t.scale || 1),
+      ]);
+      parts.earTufts.push(tuft);
+    });
+  }
+  
+  // 飘动的长毛（毛球魔）
+  if (partConfigs.furStrands) {
+    parts.furStrands = [];
+    partConfigs.furStrands.forEach(f => {
+      const strand = monster.add([
+        sprite(f.sprite),
+        anchor(f.anchor || 'center'),
+        pos(f.pos?.x || 0, f.pos?.y || 0),
+        z(f.z || 1),
+        rotate(f.rotation || 0),
+        scale(f.scale || 1),
+      ]);
+      parts.furStrands.push(strand);
     });
   }
 }

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140" width="120" height="140">
+  <defs>
+    <!-- 巫师帽渐变 -->
+    <linearGradient id="hatGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#505070"/>
+      <stop offset="50%" style="stop-color:#303050"/>
+      <stop offset="100%" style="stop-color:#202040"/>
+    </linearGradient>
+    <!-- 帽带渐变 -->
+    <linearGradient id="bandGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8050c0"/>
+      <stop offset="50%" style="stop-color:#a070e0"/>
+      <stop offset="100%" style="stop-color:#8050c0"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- 帽檐 -->
+  <ellipse cx="60" cy="120" rx="55" ry="15" fill="#303050"/>
+  <ellipse cx="60" cy="118" rx="50" ry="12" fill="#404060"/>
+  
+  <!-- 帽身 - 略微歪斜 -->
+  <path d="M 50 120 
+           Q 30 80 40 40 
+           Q 50 5 70 10 
+           Q 95 15 90 60 
+           Q 85 100 70 115 
+           Q 65 118 60 120
+           Z" 
+        fill="url(#hatGrad)"/>
+  
+  <!-- 帽子纹理 -->
+  <path d="M 50 100 Q 55 70 60 40 Q 65 30 70 35" 
+        fill="none" stroke="#606080" stroke-width="2" opacity="0.3"/>
+  
+  <!-- 帽带 -->
+  <ellipse cx="60" cy="105" rx="18" ry="6" fill="url(#bandGrad)"/>
+  
+  <!-- 帽带装饰星 -->
+  <polygon points="60,98 62,103 67,103 63,107 65,112 60,109 55,112 57,107 53,103 58,103" 
+           fill="#ffd050"/>
+  
+  <!-- 破损边缘 -->
+  <path d="M 85 50 Q 88 55 82 58 Q 86 62 80 65" 
+        fill="none" stroke="#202040" stroke-width="2" opacity="0.5"/>
+</svg>

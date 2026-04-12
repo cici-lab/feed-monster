@@ -174,13 +174,13 @@ export function initDragSystem(monster, state) {
 // 导出 triggerCraft 函数供控制台调用
 export { triggerCraft };
 
-function startDrag(food, mousePos) {
+function startDrag(food, mouse) {
   isDragging = true;
   draggedFood = food;
   dragStartPos = { x: food.pos.x, y: food.pos.y };
   dragStartTime = time();
-  dragPositions = [{ x: mousePos.x, y: mousePos.y, time: time() }];
-  lastMousePos = { x: mousePos.x, y: mousePos.y };
+  dragPositions = [{ x: mouse.x, y: mouse.y, time: time() }];
+  lastMousePos = { x: mouse.x, y: mouse.y };
   throwVelocity = { x: 0, y: 0 };
   
   // 高亮被拖拽的食物
@@ -189,6 +189,13 @@ function startDrag(food, mousePos) {
 }
 
 function updateDrag() {
+  // 检查 draggedFood 是否仍然有效
+  if (!draggedFood || !draggedFood.exists || !draggedFood.exists()) {
+    isDragging = false;
+    draggedFood = null;
+    return;
+  }
+  
   const mouse = mousePos();
   
   // 更新食物位置
@@ -220,11 +227,21 @@ function updateDrag() {
   const monster = getMonster();
   if (monster && checkCollision(draggedFood, monster)) {
     feedMonster(draggedFood);
+    // feedMonster 后立即返回，防止继续访问已销毁的食物
+    return;
   }
 }
 
 function endDrag() {
   if (!draggedFood) return;
+  
+  // 检查食物是否仍然存在
+  if (!draggedFood.exists || !draggedFood.exists()) {
+    isDragging = false;
+    draggedFood = null;
+    dragPositions = [];
+    return;
+  }
   
   // 检查是否在合成炉区域
   if (isFoodInForge(draggedFood)) {
@@ -268,6 +285,11 @@ function applyThrowPhysics(food) {
   food.use({
     id: 'throwPhysics',
     update() {
+      // 检查食物是否仍然存在
+      if (!food || !food.exists || !food.exists()) {
+        return;
+      }
+      
       if (Math.abs(velocity.x) > 5 || Math.abs(velocity.y) > 5) {
         food.pos.x += velocity.x * dt();
         food.pos.y += velocity.y * dt();
@@ -286,12 +308,17 @@ function applyThrowPhysics(food) {
 }
 
 function checkCollision(food, monster) {
+  // 防御性检查
+  if (!food || !monster || !food.pos || !monster.pos) {
+    return false;
+  }
+  
   const dx = food.pos.x - monster.pos.x;
   const dy = food.pos.y - monster.pos.y;
   const distance = Math.sqrt(dx * dx + dy * dy);
   
   // 碰撞距离 = 怪物半径 + 食物大小
-  const foodSize = food.foodType.size || 20;
+  const foodSize = food.foodType?.size || 20;
   const actualSize = Array.isArray(foodSize) ? Math.max(foodSize[0], foodSize[1]) : foodSize;
   const collisionDistance = 80 + actualSize;
   
@@ -299,8 +326,26 @@ function checkCollision(food, monster) {
 }
 
 function feedMonster(food) {
+  // 先重置拖拽状态，防止异常导致卡死
+  isDragging = false;
+  draggedFood = null;
+  
   const monster = getMonster();
   const foodType = food.foodType;
+  
+  // 防御性检查：确保 foodType 存在
+  if (!foodType) {
+    console.error('[feedMonster] foodType is undefined for food:', food);
+    if (food.exists && food.exists()) {
+      food.destroy();
+    }
+    const foods = getActiveFoods();
+    const index = foods.indexOf(food);
+    if (index > -1) {
+      foods.splice(index, 1);
+    }
+    return;
+  }
   
   // 检查是否为不可食用食物
   if (foodType.inedible) {
@@ -329,13 +374,17 @@ function feedMonster(food) {
   gameState.hunger = Math.min(100, gameState.hunger + foodType.points / 2);
   
   // 怪物成长
-  monster.grow(foodType.points / 100);
+  if (monster && monster.grow) {
+    monster.grow(foodType.points / 100);
+  }
   
   // 怪物反应
-  monster.setEating();
+  if (monster && monster.setEating) {
+    monster.setEating();
+  }
   
   // 根据食物类型显示不同反应
-  if (foodType.reaction) {
+  if (foodType.reaction && monster) {
     showReaction(monster, foodType.reaction);
   }
   
@@ -343,10 +392,12 @@ function feedMonster(food) {
   showScorePopup(food.pos.x, food.pos.y, points, speedBonus);
   
   // 吃掉特效
-  createEatEffect(food.pos.x, food.pos.y, foodType.color);
+  createEatEffect(food.pos.x, food.pos.y, foodType.color || [255, 255, 255]);
   
   // 移除食物
-  food.destroy();
+  if (food.exists && food.exists()) {
+    food.destroy();
+  }
   
   // 从活跃列表中移除
   const foods = getActiveFoods();
@@ -354,9 +405,6 @@ function feedMonster(food) {
   if (index > -1) {
     foods.splice(index, 1);
   }
-  
-  isDragging = false;
-  draggedFood = null;
 }
 
 // 拒绝食物函数
@@ -365,12 +413,19 @@ function rejectFood(food, monster) {
   isDragging = false;
   draggedFood = null;
   
+  // 检查食物是否有效
+  if (!food || !food.exists || !food.exists()) {
+    return;
+  }
+  
   // 重置食物状态
   food.opacity = 1;
   food.scale = vec2(1);
   
   // 显示拒绝表情
-  showReaction(monster, 'reject');
+  if (monster) {
+    showReaction(monster, 'reject');
+  }
   
   // 显示拒绝特效
   showRejectEffect(food.pos.x, food.pos.y);
@@ -384,6 +439,11 @@ function rejectFood(food, monster) {
   food.use({
     id: 'bounceAway',
     update() {
+      // 检查食物是否仍然存在
+      if (!food || !food.exists || !food.exists()) {
+        return;
+      }
+      
       if (Math.abs(velocity.x) > 5 || Math.abs(velocity.y) > 5) {
         food.pos.x += velocity.x * dt();
         food.pos.y += velocity.y * dt();
@@ -409,7 +469,6 @@ function showRejectEffect(x, y) {
     {
       update() {
         this.pos.y -= 40 * dt();
-        this.opacity -= 1.25 * dt();
       }
     },
   ]);
@@ -430,7 +489,6 @@ function showRejectEffect(x, y) {
         update() {
           this.pos.x += Math.cos(angle) * speed * dt();
           this.pos.y += Math.sin(angle) * speed * dt();
-          this.opacity -= 2.5 * dt();
         }
       },
     ]);
@@ -462,7 +520,6 @@ function showReaction(monster, reaction) {
     {
       update() {
         this.pos.y -= 30 * dt();
-        this.opacity -= dt();
       }
     },
   ]);
@@ -480,7 +537,6 @@ function showScorePopup(x, y, points, multiplier) {
     {
       update() {
         this.pos.y -= 50 * dt();
-        this.opacity -= 0.7 * dt();
       }
     },
   ]);
@@ -498,7 +554,6 @@ function showScorePopup(x, y, points, multiplier) {
       {
         update() {
           this.pos.y -= 20 * dt();
-          this.opacity -= dt();
         }
       },
     ]);
@@ -517,7 +572,6 @@ function showScorePopup(x, y, points, multiplier) {
       {
         update() {
           this.pos.y -= 25 * dt();
-          this.opacity -= dt();
         }
       },
     ]);
@@ -541,7 +595,6 @@ function createEatEffect(x, y, foodColor) {
         update() {
           this.pos.x += Math.cos(angle) * speed * dt();
           this.pos.y += Math.sin(angle) * speed * dt();
-          this.opacity -= 1.7 * dt();
         }
       },
     ]);
@@ -560,7 +613,6 @@ function createEatEffect(x, y, foodColor) {
       {
         update() {
           this.pos.y -= 60 * dt();
-          this.opacity -= 2 * dt();
         }
       },
     ]);
@@ -634,7 +686,6 @@ function showForgeFullEffect(food) {
     {
       update() {
         this.pos.y -= 30 * dt();
-        this.opacity -= dt();
       }
     },
   ]);
@@ -711,7 +762,6 @@ function showCraftSuccessEffect(recipe, isNewUnlock) {
           const currentSpeed = speed * (1 - this.opacity);
           this.pos.x += Math.cos(angle) * currentSpeed * dt();
           this.pos.y += Math.sin(angle) * currentSpeed * dt();
-          this.opacity -= 1.25 * dt();
         }
       },
     ]);
@@ -729,7 +779,6 @@ function showCraftSuccessEffect(recipe, isNewUnlock) {
     {
       update() {
         this.pos.y -= 40 * dt();
-        this.opacity -= 0.8 * dt();
       }
     },
   ]);
@@ -747,7 +796,6 @@ function showCraftSuccessEffect(recipe, isNewUnlock) {
       {
         update() {
           this.pos.y -= 30 * dt();
-          this.opacity -= 0.6 * dt();
         }
       },
     ]);
@@ -763,7 +811,6 @@ function showCraftSuccessEffect(recipe, isNewUnlock) {
       {
         update() {
           this.pos.y -= 30 * dt();
-          this.opacity -= 0.6 * dt();
         }
       },
     ]);
@@ -806,7 +853,6 @@ function showCraftFailEffect() {
     {
       update() {
         this.pos.y -= 30 * dt();
-        this.opacity -= dt();
       }
     },
   ]);
@@ -827,7 +873,6 @@ function showCraftFailEffect() {
         update() {
           this.pos.x += Math.cos(angle) * speed * dt();
           this.pos.y += Math.sin(angle) * speed * dt();
-          this.opacity -= 0.8 * dt();
         }
       },
     ]);
@@ -882,6 +927,7 @@ function createCraftedItem(recipe) {
     targetX: width() / 2,
     targetY: height() / 2 - 100,
     update() {
+      if (!craftedFood.exists()) return;
       this.bounceTime += dt();
 
       const bounce = Math.sin(this.bounceTime * 5) * Math.exp(-this.bounceTime * 3) * 50;
@@ -911,7 +957,6 @@ function createCraftedItem(recipe) {
     {
       update() {
         this.pos.y -= 40 * dt();
-        this.opacity -= 0.7 * dt();
       }
     },
   ]);

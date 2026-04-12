@@ -473,12 +473,12 @@ function createPartMonster(monster, parts, config) {
 /**
  * 成长特效
  */
-function createGrowEffect(pos) {
+function createGrowEffect(position) {
   // 粒子效果
   for (let i = 0; i < 8; i++) {
     add([
       circle(6),
-      pos(pos.x + rand(-60, 60), pos.y + rand(-60, 60)),
+      pos(position.x + rand(-60, 60), position.y + rand(-60, 60)),
       color(255, 80, 80),
       opacity(1),
       lifespan(0.6),
@@ -486,7 +486,6 @@ function createGrowEffect(pos) {
       {
         update() {
           this.pos.y -= 60 * dt();
-          this.opacity -= 2 * dt();
         }
       },
     ]);
@@ -497,14 +496,13 @@ function createGrowEffect(pos) {
     const angle = (i / 4) * Math.PI * 2;
     add([
       circle(4),
-      pos(pos.x + Math.cos(angle) * 80, pos.y + Math.sin(angle) * 80),
+      pos(position.x + Math.cos(angle) * 80, position.y + Math.sin(angle) * 80),
       color(255, 100, 100),
       opacity(1),
       lifespan(0.5),
       z(10),
       {
         update() {
-          this.opacity -= 2.5 * dt();
           this.pos.x += Math.cos(angle) * 30 * dt();
           this.pos.y += Math.sin(angle) * 30 * dt();
         }

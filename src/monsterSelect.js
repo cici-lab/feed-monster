@@ -13,20 +13,24 @@ let onSelectCallback = null;
  */
 const MONSTER_PREVIEWS = {
   eyemonster: {
-    svg: '/assets/monsters/eyemonster/body.svg',
-    bgGradient: 'linear-gradient(135deg, #7a1818, #3a0808)',
+    svg: '/assets/monsters/eyemonster/logo.svg',
+    bgGradient: 'linear-gradient(135deg, #6a1818, #3a0808)',
+    glowColor: 'rgba(180, 50, 50, 0.4)',
   },
   slimemon: {
-    svg: '/assets/monsters/slimemon/body.svg',
-    bgGradient: 'linear-gradient(135deg, #60d8b0, #208060)',
+    svg: '/assets/monsters/slimemon/logo.svg',
+    bgGradient: 'linear-gradient(135deg, #50c8a0, #208060)',
+    glowColor: 'rgba(80, 200, 160, 0.4)',
   },
   ghostmon: {
-    svg: '/assets/monsters/ghostmon/body.svg',
-    bgGradient: 'linear-gradient(135deg, #c0c0e8, #8080c0)',
+    svg: '/assets/monsters/ghostmon/logo.svg',
+    bgGradient: 'linear-gradient(135deg, #a0a0d0, #6060a0)',
+    glowColor: 'rgba(160, 140, 200, 0.4)',
   },
   furballmon: {
-    svg: '/assets/monsters/furballmon/body.svg',
-    bgGradient: 'linear-gradient(135deg, #f8f0f8, #d0c0d0)',
+    svg: '/assets/monsters/furballmon/logo.svg',
+    bgGradient: 'linear-gradient(135deg, #f0e0f0, #c0b0c0)',
+    glowColor: 'rgba(200, 180, 200, 0.4)',
   },
 };
 

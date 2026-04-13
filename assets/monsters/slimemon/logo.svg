@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <radialGradient id="slimeGrad" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" style="stop-color:#a0ffe0"/>
+      <stop offset="100%" style="stop-color:#40b090"/>
+    </radialGradient>
+    <radialGradient id="starGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="50%" style="stop-color:#ffd050"/>
+      <stop offset="100%" style="stop-color:#ff9020"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- 简化的果冻身体 -->
+  <ellipse cx="50" cy="52" rx="38" ry="35" fill="url(#slimeGrad)"/>
+  
+  <!-- 高光 -->
+  <ellipse cx="38" cy="35" rx="15" ry="12" fill="#ffffff" opacity="0.5"/>
+  
+  <!-- 核心星星 -->
+  <polygon points="50,25 53,42 70,42 57,52 62,70 50,60 38,70 43,52 30,42 47,42" 
+           fill="url(#starGrad)" transform="scale(0.7) translate(21, 15)"/>
+  
+  <!-- 简化的眼睛 -->
+  <ellipse cx="38" cy="45" rx="10" ry="12" fill="#ffffff"/>
+  <ellipse cx="62" cy="48" rx="7" ry="9" fill="#ffffff"/>
+  <circle cx="40" cy="44" r="4" fill="#2080c0"/>
+  <circle cx="63" cy="47" r="3" fill="#2080c0"/>
+</svg>

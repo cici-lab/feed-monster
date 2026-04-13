@@ -39,6 +39,7 @@ loadSprite('monsters/eyemonster/mouth-closed', '/assets/monsters/eyemonster/mout
 loadSprite('monsters/eyemonster/mouth-open', '/assets/monsters/eyemonster/mouth-open.svg');
 loadSprite('monsters/eyemonster/tentacle', '/assets/monsters/eyemonster/tentacle.svg');
 loadSprite('monsters/eyemonster/foot', '/assets/monsters/eyemonster/foot.svg');
+loadSprite('monsters/eyemonster/logo', '/assets/monsters/eyemonster/logo.svg');
 
 // 加载史莱姆魔部件精灵
 loadSprite('monsters/slimemon/body', '/assets/monsters/slimemon/body.svg');
@@ -49,6 +50,7 @@ loadSprite('monsters/slimemon/mouth-closed', '/assets/monsters/slimemon/mouth-cl
 loadSprite('monsters/slimemon/mouth-open', '/assets/monsters/slimemon/mouth-open.svg');
 loadSprite('monsters/slimemon/floatie', '/assets/monsters/slimemon/floatie.svg');
 loadSprite('monsters/slimemon/bone', '/assets/monsters/slimemon/bone.svg');
+loadSprite('monsters/slimemon/logo', '/assets/monsters/slimemon/logo.svg');
 
 // 加载幽灵魔部件精灵
 loadSprite('monsters/ghostmon/body', '/assets/monsters/ghostmon/body.svg');
@@ -58,6 +60,7 @@ loadSprite('monsters/ghostmon/mouth-closed', '/assets/monsters/ghostmon/mouth-cl
 loadSprite('monsters/ghostmon/mouth-open', '/assets/monsters/ghostmon/mouth-open.svg');
 loadSprite('monsters/ghostmon/tail', '/assets/monsters/ghostmon/tail.svg');
 loadSprite('monsters/ghostmon/sparkle', '/assets/monsters/ghostmon/sparkle.svg');
+loadSprite('monsters/ghostmon/logo', '/assets/monsters/ghostmon/logo.svg');
 
 // 加载毛球魔部件精灵
 loadSprite('monsters/furballmon/body', '/assets/monsters/furballmon/body.svg');
@@ -67,6 +70,7 @@ loadSprite('monsters/furballmon/mouth-closed', '/assets/monsters/furballmon/mout
 loadSprite('monsters/furballmon/mouth-open', '/assets/monsters/furballmon/mouth-open.svg');
 loadSprite('monsters/furballmon/ear-tuft', '/assets/monsters/furballmon/ear-tuft.svg');
 loadSprite('monsters/furballmon/fur-strand', '/assets/monsters/furballmon/fur-strand.svg');
+loadSprite('monsters/furballmon/logo', '/assets/monsters/furballmon/logo.svg');
 
 // 标题场景
 scene('title', () => {

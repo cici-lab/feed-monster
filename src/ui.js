@@ -3,6 +3,9 @@
  * 处理分数显示、饱食度条、生命值条、游戏界面元素
  */
 
+import { showMonsterSelect } from './monsterSelect.js';
+import { setMonsterType } from './monster.js';
+
 let scoreDisplay = null;
 let hungerBar = null;
 let hungerFill = null;
@@ -12,6 +15,14 @@ let comboDisplay = null;
 
 // UI 引用（供其他模块使用）
 let uiRefs = null;
+
+// 返回选择按钮回调
+let onSelectMonsterCallback = null;
+
+// 设置返回选择按钮的回调
+export function setOnSelectMonsterCallback(callback) {
+  onSelectMonsterCallback = callback;
+}
 
 export function createUI(state) {
   // 顶部 UI 容器
@@ -100,6 +111,43 @@ export function createUI(state) {
     color(200, 200, 200),
   ]);
 
+  // 返回选择按钮背景
+  const backBtnBg = add([
+    rect(110, 36),
+    pos(20, height() - 56),
+    anchor('topleft'),
+    color(60, 80, 60),
+    outline(2, rgb(100, 140, 100)),
+    z(30),
+    fixed(),
+    area(),
+  ]);
+  
+  // 返回选择按钮文字
+  const backBtnText = backBtnBg.add([
+    text('换只怪兽', { size: 16 }),
+    pos(55, 18),
+    anchor('center'),
+    color(200, 230, 200),
+  ]);
+  
+  // 返回选择按钮悬停效果
+  backBtnBg.onHover(() => {
+    backBtnBg.color = rgb(80, 100, 80);
+  });
+  backBtnBg.onHoverEnd(() => {
+    backBtnBg.color = rgb(60, 80, 60);
+  });
+  
+  // 返回选择按钮点击
+  backBtnBg.onClick(() => {
+    // 直接显示怪兽选择界面，不跳转到标题界面
+    showMonsterSelect((selectedMonsterId) => {
+      setMonsterType(selectedMonsterId);
+      go('game');
+    });
+  });
+
   // 全屏按钮背景
   const fullscreenBtnBg = add([
     rect(100, 36),
@@ -111,10 +159,13 @@ export function createUI(state) {
     fixed(),
   ]);
   
-  // 每帧更新全屏按钮位置
+  // 每帧更新按钮位置
   onUpdate(() => {
     if (fullscreenBtnBg && fullscreenBtnBg.exists()) {
       fullscreenBtnBg.pos.x = width() - 120;
+    }
+    if (backBtnBg && backBtnBg.exists()) {
+      backBtnBg.pos.y = height() - 56;
     }
   });
   
@@ -202,6 +253,8 @@ export function createUI(state) {
     fullscreenBtnBg,
     fullscreenText,
     updateFullscreenBtnPos,
+    backBtnBg,
+    backBtnText,
   };
 
   return uiRefs;

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <radialGradient id="ghostGrad" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" style="stop-color:#e8e0f8"/>
+      <stop offset="100%" style="stop-color:#a0a0c8"/>
+    </radialGradient>
+    <linearGradient id="hatGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#505070"/>
+      <stop offset="100%" style="stop-color:#202040"/>
+    </linearGradient>
+    <linearGradient id="bandGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8050c0"/>
+      <stop offset="100%" style="stop-color:#a070e0"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- 简化的幽灵身体 -->
+  <path d="M 25 65 
+           Q 20 45 30 30 
+           Q 45 15 65 25 
+           Q 85 35 80 55 
+           Q 85 75 75 85
+           Q 70 80 65 85
+           Q 60 80 55 85
+           Q 50 80 45 85
+           Q 40 80 35 85
+           Q 30 80 25 75
+           Z" 
+        fill="url(#ghostGrad)"/>
+  
+  <!-- 巫师帽 -->
+  <path d="M 30 40 Q 35 20 50 15 Q 65 20 60 40 L 55 35 Q 50 10 45 35 Z" 
+        fill="url(#hatGrad)"/>
+  
+  <!-- 帽带 -->
+  <ellipse cx="47" cy="38" rx="10" ry="3" fill="url(#bandGrad)"/>
+  
+  <!-- 独眼 -->
+  <circle cx="50" cy="55" r="12" fill="#ffffff"/>
+  <circle cx="52" cy="54" r="6" fill="#7050dd"/>
+  <circle cx="53" cy="53" r="3" fill="#201030"/>
+  <circle cx="55" cy="51" r="2" fill="#ffffff"/>
+</svg>

@@ -1,19 +1,43 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 45" width="60" height="45">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 55" width="70" height="55">
   <defs>
+    <!-- 嘴内渐变 -->
     <radialGradient id="mouthGrad" cx="50%" cy="30%" r="70%">
-      <stop offset="0%" style="stop-color="#503050"/>
-      <stop offset="100%" style="stop-color="#301030"/>
+      <stop offset="0%" style="stop-color:#402040"/>
+      <stop offset="100%" style="stop-color:#201020"/>
     </radialGradient>
+    <!-- 舌头渐变 -->
+    <radialGradient id="tongueGrad" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" style="stop-color:#ff8fa8"/>
+      <stop offset="100%" style="stop-color:#e06080"/>
+    </radialGradient>
+    <!-- 牙齿渐变 -->
+    <linearGradient id="toothGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="100%" style="stop-color:#f0e8f0"/>
+    </linearGradient>
   </defs>
   
-  <!-- 张开的嘴 -->
-  <ellipse cx="30" cy="22" rx="22" ry="16" fill="url(#mouthGrad)"/>
-  <ellipse cx="30" cy="22" rx="22" ry="16" fill="none" stroke="#c0a0c0" stroke-width="2"/>
+  <!-- 张开的椭圆嘴 -->
+  <ellipse cx="35" cy="28" rx="26" ry="20" fill="url(#mouthGrad)"/>
+  <ellipse cx="35" cy="28" rx="26" ry="20" fill="none" stroke="#c090a8" stroke-width="2"/>
   
-  <!-- 尖尖的小虎牙 -->
-  <polygon points="18,16 22,8 26,16" fill="#f0e0f0"/>
-  <polygon points="34,16 38,8 42,16" fill="#f0e0f0"/>
+  <!-- 小尖牙 - 左 -->
+  <path d="M 22 16 L 26 8 L 30 16" fill="url(#toothGrad)"/>
+  <path d="M 22 16 L 26 8 L 30 16" fill="none" stroke="#e0d0e0" stroke-width="0.8"/>
+  
+  <!-- 小尖牙 - 右 -->
+  <path d="M 40 16 L 44 8 L 48 16" fill="url(#toothGrad)"/>
+  <path d="M 40 16 L 44 8 L 48 16" fill="none" stroke="#e0d0e0" stroke-width="0.8"/>
   
   <!-- 舌头 -->
-  <ellipse cx="30" cy="32" rx="10" ry="8" fill="#e080a0" opacity="0.7"/>
+  <ellipse cx="35" cy="38" rx="14" ry="10" fill="url(#tongueGrad)"/>
+  
+  <!-- 舌头高光 -->
+  <ellipse cx="32" cy="35" rx="6" ry="4" fill="#ffffff" opacity="0.3"/>
+  
+  <!-- 舌头纹理 -->
+  <g fill="none" stroke="#d05070" stroke-width="0.8" opacity="0.3">
+    <path d="M 28 40 Q 35 42 42 40"/>
+    <path d="M 30 44 Q 35 46 40 44"/>
+  </g>
 </svg>

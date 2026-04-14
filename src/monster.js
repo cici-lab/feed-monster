@@ -112,12 +112,12 @@ export const MONSTER_TYPES = {
     parts: {
       body: { sprite: 'monsters/furballmon/body', anchor: 'center', z: 0 },
       mouth: { 
-        closed: { sprite: 'monsters/furballmon/mouth-closed', anchor: 'center', z: 2, pos: { x: 0, y: 20 } },
-        open: { sprite: 'monsters/furballmon/mouth-open', anchor: 'center', z: 2, pos: { x: 0, y: 22 } }
+        closed: { sprite: 'monsters/furballmon/mouth-closed', anchor: 'center', z: 2, pos: { x: 0, y: 28 }, scale: 0.9 },
+        open: { sprite: 'monsters/furballmon/mouth-open', anchor: 'center', z: 2, pos: { x: 0, y: 32 }, scale: 0.85 }
       },
       eyes: [
-        { sprite: 'monsters/furballmon/big-eye', anchor: 'center', z: 3, pos: { x: -12, y: -10 }, scale: 0.85 },
-        { sprite: 'monsters/furballmon/small-eye', anchor: 'center', z: 3, pos: { x: 18, y: -5 }, scale: 0.65 },
+        { sprite: 'monsters/furballmon/big-eye', anchor: 'center', z: 3, pos: { x: -18, y: -15 }, scale: 0.75 },
+        { sprite: 'monsters/furballmon/small-eye', anchor: 'center', z: 3, pos: { x: 20, y: -8 }, scale: 0.55 },
       ],
       earTufts: [
         { sprite: 'monsters/furballmon/ear-tuft', anchor: 'bottom', z: 1, pos: { x: -25, y: -55 }, rotation: -15, scale: 0.6 },

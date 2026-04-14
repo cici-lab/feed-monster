@@ -1,31 +1,57 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 70" width="70" height="70">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">
   <defs>
+    <!-- 毛发边缘渐变 -->
+    <radialGradient id="furEdge" cx="50%" cy="50%" r="50%">
+      <stop offset="70%" style="stop-color:#f8f0f8;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#e8d8e8;stop-opacity:0.8"/>
+    </radialGradient>
+    <!-- 眼白渐变 -->
     <radialGradient id="scleraGrad" cx="40%" cy="35%" r="60%">
       <stop offset="0%" style="stop-color:#ffffff"/>
-      <stop offset="100%" style="stop-color:#f0e0f0"/>
+      <stop offset="100%" style="stop-color:#f5f0f5"/>
     </radialGradient>
+    <!-- 琥珀金色虹膜 -->
     <radialGradient id="irisGrad" cx="35%" cy="35%" r="65%">
-      <stop offset="0%" style="stop-color:#80d080"/>
-      <stop offset="50%" style="stop-color:#50a050"/>
-      <stop offset="100%" style="stop-color:#308030"/>
+      <stop offset="0%" style="stop-color:#ffd700"/>
+      <stop offset="40%" style="stop-color:#ffb347"/>
+      <stop offset="70%" style="stop-color:#e8941a"/>
+      <stop offset="100%" style="stop-color:#cc7a00"/>
     </radialGradient>
+    <!-- 瞳孔渐变 -->
     <radialGradient id="pupilGrad" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" style="stop-color:#102010"/>
-      <stop offset="100%" style="stop-color="#000000"/>
+      <stop offset="0%" style="stop-color:#1a1a1a"/>
+      <stop offset="100%" style="stop-color:#000000"/>
+    </radialGradient>
+    <!-- 高光渐变 -->
+    <radialGradient id="highlightGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0.6"/>
     </radialGradient>
   </defs>
   
+  <!-- 毛发边缘/眼眶 -->
+  <circle cx="40" cy="40" r="38" fill="url(#furEdge)"/>
+  
   <!-- 眼白 -->
-  <circle cx="35" cy="35" r="28" fill="url(#scleraGrad)"/>
-  <circle cx="35" cy="35" r="28" fill="none" stroke="#c0a0c0" stroke-width="2"/>
+  <circle cx="40" cy="40" r="30" fill="url(#scleraGrad)"/>
+  <circle cx="40" cy="40" r="30" fill="none" stroke="#d8c8d8" stroke-width="1.5"/>
   
   <!-- 虹膜 -->
-  <circle cx="36" cy="34" r="16" fill="url(#irisGrad)"/>
+  <circle cx="41" cy="39" r="18" fill="url(#irisGrad)"/>
   
   <!-- 瞳孔 -->
-  <circle cx="37" cy="33" r="8" fill="url(#pupilGrad)"/>
+  <circle cx="42" cy="38" r="9" fill="url(#pupilGrad)"/>
   
-  <!-- 高光 -->
-  <circle cx="42" cy="26" r="5" fill="#ffffff" opacity="0.9"/>
-  <circle cx="32" cy="40" r="2.5" fill="#ffffff" opacity="0.6"/>
+  <!-- 主高光 -->
+  <ellipse cx="48" cy="30" rx="6" ry="5" fill="url(#highlightGrad)" opacity="0.95"/>
+  
+  <!-- 次高光 -->
+  <circle cx="35" cy="45" r="3" fill="#ffffff" opacity="0.7"/>
+  
+  <!-- 上方蓬松眉毛毛簇 -->
+  <g fill="none" stroke="#e8d8e8" stroke-width="2.5" stroke-linecap="round" opacity="0.8">
+    <path d="M 20 25 Q 25 18 32 22"/>
+    <path d="M 30 20 Q 40 12 50 20"/>
+    <path d="M 48 22 Q 55 18 60 25"/>
+  </g>
 </svg>

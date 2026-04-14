@@ -1,15 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 25" width="50" height="25">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" width="60" height="40">
   <defs>
-    <linearGradient id="mouthGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#e0d0e0"/>
-      <stop offset="100%" style="stop-color="#c0a0c0"/>
+    <!-- 嘴唇渐变 -->
+    <linearGradient id="lipGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0c0d0"/>
+      <stop offset="100%" style="stop-color:#d8a0b8"/>
     </linearGradient>
+    <!-- 阴影 -->
+    <filter id="softBlur">
+      <feGaussianBlur stdDeviation="0.5"/>
+    </filter>
   </defs>
   
-  <!-- 闭合的嘴 - 小猫嘴形状 -->
-  <path d="M 15 12 Q 20 8 25 12 Q 30 8 35 12" 
-        fill="none" stroke="url(#mouthGrad)" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- ω 形小猫嘴 - 两个圆润的小弧 -->
+  <g fill="none" stroke="url(#lipGrad)" stroke-width="3" stroke-linecap="round">
+    <!-- 左边弧 -->
+    <path d="M 18 22 Q 22 14 26 22"/>
+    <!-- 右边弧 -->
+    <path d="M 34 22 Q 38 14 42 22"/>
+  </g>
   
-  <!-- 小虎牙暗示 -->
-  <path d="M 24 12 L 25 15 L 26 12" fill="#f0e0f0" opacity="0.6"/>
+  <!-- 中间小连接点 -->
+  <circle cx="30" cy="22" r="1.5" fill="#d8a0b8"/>
+  
+  <!-- 微小的嘴缝阴影 -->
+  <g fill="none" stroke="#c090a8" stroke-width="1.5" stroke-linecap="round" opacity="0.5">
+    <path d="M 20 22 Q 22 16 26 22"/>
+    <path d="M 34 22 Q 38 16 40 22"/>
+  </g>
 </svg>

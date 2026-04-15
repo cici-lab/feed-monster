@@ -3,7 +3,7 @@
  * 处理食物拖拽、轨迹显示、力度判断
  */
 
-import { getMonster } from './monster.js';
+import { getMonster, getCurrentMonsterConfig } from './monster.js';
 import { getActiveFoods, FOOD_TYPES } from './food.js';
 import { gameState } from './state.js';
 import { getUIRefs } from './ui.js';
@@ -21,6 +21,41 @@ let throwVelocity = { x: 0, y: 0 };
 
 // 轨迹点
 let trailPoints = [];
+
+// 厌恶食物计数器
+let disgustCount = 0;
+const DISGUST_THRESHOLD = 3; // 连续吃3次厌恶食物触发恶心动画
+
+// 拒绝食物计数器 - 追踪每个不可食用食物被拒绝的次数
+const rejectCountMap = new Map();
+const REJECT_DISGUST_THRESHOLD = 3; // 同一食物被拒绝3次触发恶心动画
+
+// 检测食物是否被当前怪物厌恶
+function isFoodHated(foodTypeKey, foodType) {
+  const config = getCurrentMonsterConfig();
+  if (!config || !config.preferences) return false;
+  
+  const prefs = config.preferences;
+  
+  // 检查是否在具体讨厌的食物列表中
+  if (prefs.hatedFoods && prefs.hatedFoods.includes(foodTypeKey)) {
+    return true;
+  }
+  
+  // 检查是否属于讨厌的类别
+  if (prefs.hated && foodType.category && prefs.hated.includes(foodType.category)) {
+    return true;
+  }
+  
+  return false;
+}
+
+// 重置厌恶计数器
+export function resetDisgustCount() {
+  disgustCount = 0;
+  // 同时重置拒绝计数器
+  rejectCountMap.clear();
+}
 
 function getInteractiveFoods() {
   const baseFoods = getActiveFoods();
@@ -338,6 +373,7 @@ function feedMonster(food) {
   
   const monster = getMonster();
   const foodType = food.foodType;
+  const typeKey = food.typeKey;
   
   // 防御性检查：确保 foodType 存在
   if (!foodType) {
@@ -359,6 +395,9 @@ function feedMonster(food) {
     return;
   }
   
+  // 检测食物是否被当前怪物厌恶
+  const isHated = isFoodHated(typeKey, foodType);
+  
   // 计算投掷力度加成
   const speed = Math.sqrt(throwVelocity.x ** 2 + throwVelocity.y ** 2);
   const speedBonus = Math.min(2, 1 + speed / 500); // 最高2倍加成
@@ -372,30 +411,70 @@ function feedMonster(food) {
   }
   gameState.lastFeedTime = now;
   
-  // 最终得分
-  const points = Math.floor(foodType.points * speedBonus * (1 + gameState.combo * 0.1));
+  // 计算基础得分
+  let points = Math.floor(foodType.points * speedBonus * (1 + gameState.combo * 0.1));
+  
+  // 处理厌恶食物
+  if (isHated) {
+    disgustCount++;
+    
+    // 分数减半
+    points = Math.floor(points / 2);
+    
+    // 显示厌恶提示
+    showDisgustWarning(food.pos.x, food.pos.y, disgustCount);
+    
+    // 检查是否达到恶心动画阈值
+    if (disgustCount >= DISGUST_THRESHOLD) {
+      // 触发恶心动画
+      if (monster && monster.setDisgust) {
+        monster.setDisgust();
+      }
+      
+      // 显示恶心特效
+      showDisgustEffect(monster ? monster.pos.x : food.pos.x, monster ? monster.pos.y : food.pos.y);
+      
+      // 重置计数器
+      disgustCount = 0;
+    } else {
+      // 显示轻微厌恶反应
+      if (monster && monster.setEating) {
+        monster.setEating();
+      }
+      if (monster) {
+        showReaction(monster, 'disgust');
+      }
+    }
+  } else {
+    // 喜欢或普通食物，重置厌恶计数器
+    disgustCount = 0;
+    
+    // 怪物反应
+    if (monster && monster.setEating) {
+      monster.setEating();
+    }
+    
+    // 根据食物类型显示不同反应
+    if (foodType.reaction && monster) {
+      showReaction(monster, foodType.reaction);
+    }
+  }
+  
+  // 增加分数
   gameState.score += points;
   
-  // 增加饱食度
-  gameState.hunger = Math.min(100, gameState.hunger + foodType.points / 2);
+  // 增加饱食度（厌恶食物恢复较少）
+  const hungerGain = isHated ? foodType.points / 4 : foodType.points / 2;
+  gameState.hunger = Math.min(100, gameState.hunger + hungerGain);
   
-  // 怪物成长
+  // 怪物成长（厌恶食物成长较少）
   if (monster && monster.grow) {
-    monster.grow(foodType.points / 100);
-  }
-  
-  // 怪物反应
-  if (monster && monster.setEating) {
-    monster.setEating();
-  }
-  
-  // 根据食物类型显示不同反应
-  if (foodType.reaction && monster) {
-    showReaction(monster, foodType.reaction);
+    const growthAmount = isHated ? foodType.points / 200 : foodType.points / 100;
+    monster.grow(growthAmount);
   }
   
   // 显示得分特效
-  showScorePopup(food.pos.x, food.pos.y, points, speedBonus);
+  showScorePopup(food.pos.x, food.pos.y, points, speedBonus, isHated);
   
   // 吃掉特效
   createEatEffect(food.pos.x, food.pos.y, foodType.color || [255, 255, 255]);
@@ -424,17 +503,42 @@ function rejectFood(food, monster) {
     return;
   }
   
+  // 获取食物的唯一标识（使用 typeKey）
+  const foodId = food.typeKey || `unknown_${food.pos.x.toFixed(0)}_${food.pos.y.toFixed(0)}`;
+  
+  // 增加拒绝计数
+  const currentCount = rejectCountMap.get(foodId) || 0;
+  const newCount = currentCount + 1;
+  rejectCountMap.set(foodId, newCount);
+  
   // 重置食物状态
   food.opacity = 1;
   food.scale = vec2(1);
   
-  // 显示拒绝表情
-  if (monster) {
-    showReaction(monster, 'reject');
+  // 检查是否达到恶心阈值
+  if (newCount >= REJECT_DISGUST_THRESHOLD) {
+    // 触发恶心动画
+    if (monster && monster.setDisgust) {
+      monster.setDisgust();
+    }
+    
+    // 显示恶心拒绝特效（更强烈）
+    showDisgustRejectEffect(food.pos.x, food.pos.y, foodId);
+    
+    // 重置该食物的计数
+    rejectCountMap.delete(foodId);
+  } else {
+    // 显示普通拒绝表情
+    if (monster) {
+      showReaction(monster, 'reject');
+    }
+    
+    // 显示拒绝特效
+    showRejectEffect(food.pos.x, food.pos.y);
+    
+    // 显示拒绝次数提示
+    showRejectCountWarning(food.pos.x, food.pos.y, newCount, REJECT_DISGUST_THRESHOLD);
   }
-  
-  // 显示拒绝特效
-  showRejectEffect(food.pos.x, food.pos.y);
   
   // 弹开食物
   const bounceAngle = Math.atan2(food.pos.y - monster.pos.y, food.pos.x - monster.pos.x);
@@ -501,6 +605,124 @@ function showRejectEffect(x, y) {
   }
 }
 
+// 显示拒绝次数警告
+function showRejectCountWarning(x, y, currentCount, threshold) {
+  const remaining = threshold - currentCount;
+  
+  add([
+    text(`再拒绝${remaining}次就要吐了...`, { size: 14 }),
+    pos(x, y - 60),
+    anchor('center'),
+    color(180, 100, 100),
+    opacity(1),
+    lifespan(1),
+    z(20),
+    {
+      update() {
+        this.pos.y -= 25 * dt();
+      }
+    },
+  ]);
+}
+
+// 显示恶心拒绝特效（多次拒绝同一食物时触发）
+function showDisgustRejectEffect(x, y, foodId) {
+  // 大的恶心 X 标记
+  add([
+    text('✗✗✗', { size: 40 }),
+    pos(x, y - 20),
+    anchor('center'),
+    color(100, 200, 100),
+    opacity(1),
+    lifespan(1.2),
+    z(20),
+    {
+      update() {
+        this.pos.y -= 50 * dt();
+        this.opacity -= 0.3 * dt();
+      }
+    },
+  ]);
+  
+  // 恶心文字
+  add([
+    text('🤢 别再给我这个了!', { size: 20 }),
+    pos(x, y - 90),
+    anchor('center'),
+    color(100, 180, 100),
+    opacity(1),
+    lifespan(1.5),
+    z(20),
+    {
+      update() {
+        this.pos.y -= 35 * dt();
+      }
+    },
+  ]);
+  
+  // 绿色呕吐粒子爆发
+  for (let i = 0; i < 15; i++) {
+    const angle = (i / 15) * Math.PI * 2;
+    const speed = rand(120, 250);
+    
+    add([
+      circle(rand(5, 12)),
+      pos(x, y + 20),
+      color(80, 160 + rand(0, 60), 80),
+      opacity(0.85),
+      lifespan(1),
+      z(15),
+      {
+        update() {
+          this.pos.x += Math.cos(angle) * speed * dt();
+          this.pos.y += Math.sin(angle) * speed * dt() - 60 * dt();
+          this.opacity -= 0.4 * dt();
+        }
+      },
+    ]);
+  }
+  
+  // 恶心绿色光晕
+  add([
+    circle(100),
+    pos(x, y),
+    color(100, 180, 100),
+    opacity(0.4),
+    anchor('center'),
+    z(15),
+    {
+      life: 0.6,
+      update() {
+        this.life -= dt();
+        this.scale = vec2(1 + (0.6 - this.life) * 2.5);
+        this.opacity = this.life * 0.67;
+        if (this.life <= 0) {
+          this.destroy();
+        }
+      }
+    },
+  ]);
+  
+  // 闪烁的警告边框
+  add([
+    rect(120, 40),
+    pos(x - 60, y - 110),
+    color(100, 200, 100),
+    opacity(0.3),
+    z(19),
+    {
+      life: 0.5,
+      update() {
+        this.life -= dt();
+        this.opacity = Math.sin(this.life * 20) * 0.15 + 0.15;
+        if (this.life <= 0) {
+          this.destroy();
+        }
+      }
+    },
+  ]);
+}
+
 function showReaction(monster, reaction) {
   // 在怪物上方显示反应表情
   const reactions = {
@@ -531,12 +753,15 @@ function showReaction(monster, reaction) {
   ]);
 }
 
-function showScorePopup(x, y, points, multiplier) {
+function showScorePopup(x, y, points, multiplier, isHated = false) {
+  // 厌恶食物用红色显示分数
+  const scoreColor = isHated ? [255, 100, 100] : [255, 255, 100];
+  
   add([
-    text(`+${points}`, { size: 28, font: 'monospace' }),
+    text(isHated ? `${points}` : `+${points}`, { size: 28, font: 'monospace' }),
     pos(x, y),
     anchor('center'),
-    color(255, 255, 100),
+    color(scoreColor[0], scoreColor[1], scoreColor[2]),
     opacity(1),
     lifespan(1.5),
     z(20),
@@ -547,8 +772,26 @@ function showScorePopup(x, y, points, multiplier) {
     },
   ]);
   
+  // 厌恶食物显示减半提示
+  if (isHated) {
+    add([
+      text('厌恶! ÷2', { size: 16 }),
+      pos(x, y + 30),
+      anchor('center'),
+      color(100, 180, 100),
+      opacity(1),
+      lifespan(1),
+      z(20),
+      {
+        update() {
+          this.pos.y -= 20 * dt();
+        }
+      },
+    ]);
+  }
+  
   // 如果有倍率加成，显示额外信息
-  if (multiplier > 1.2) {
+  if (multiplier > 1.2 && !isHated) {
     add([
       text(`x${multiplier.toFixed(1)} SPEED!`, { size: 16 }),
       pos(x, y + 30),
@@ -565,8 +808,8 @@ function showScorePopup(x, y, points, multiplier) {
     ]);
   }
   
-  // 连击显示
-  if (gameState.combo > 1) {
+  // 连击显示（厌恶食物不显示）
+  if (gameState.combo > 1 && !isHated) {
     add([
       text(`${gameState.combo} COMBO!`, { size: 20 }),
       pos(x, y + (multiplier > 1.2 ? 50 : 30)),
@@ -582,6 +825,89 @@ function showScorePopup(x, y, points, multiplier) {
       },
     ]);
   }
+}
+
+// 显示厌恶警告
+function showDisgustWarning(x, y, count) {
+  const remaining = DISGUST_THRESHOLD - count;
+  
+  if (remaining > 0) {
+    add([
+      text(`厌恶! 还需${remaining}次触发恶心`, { size: 16 }),
+      pos(x, y - 50),
+      anchor('center'),
+      color(100, 180, 100),
+      opacity(1),
+      lifespan(1),
+      z(20),
+      {
+        update() {
+          this.pos.y -= 30 * dt();
+        }
+      },
+    ]);
+  }
+}
+
+// 显示恶心特效
+function showDisgustEffect(x, y) {
+  // 恶心文字
+  add([
+    text('🤢 呕...', { size: 32 }),
+    pos(x, y - 80),
+    anchor('center'),
+    color(100, 180, 100),
+    opacity(1),
+    lifespan(1.5),
+    z(20),
+    {
+      update() {
+        this.pos.y -= 40 * dt();
+      }
+    },
+  ]);
+  
+  // 绿色呕吐粒子
+  for (let i = 0; i < 12; i++) {
+    const angle = (i / 12) * Math.PI * 2;
+    const speed = rand(100, 200);
+    
+    add([
+      circle(rand(4, 10)),
+      pos(x, y + 30),
+      color(100, 180 + rand(0, 40), 100),
+      opacity(0.8),
+      lifespan(0.8),
+      z(15),
+      {
+        update() {
+          this.pos.x += Math.cos(angle) * speed * dt();
+          this.pos.y += Math.sin(angle) * speed * dt() - 50 * dt();
+        }
+      },
+    ]);
+  }
+  
+  // 绿色光晕
+  add([
+    circle(80),
+    pos(x, y),
+    color(100, 180, 100),
+    opacity(0.3),
+    anchor('center'),
+    z(15),
+    {
+      life: 0.5,
+      update() {
+        this.life -= dt();
+        this.scale = vec2(1 + (0.5 - this.life) * 2);
+        this.opacity = this.life * 0.6;
+        if (this.life <= 0) {
+          this.destroy();
+        }
+      }
+    },
+  ]);
 }
 
 function createEatEffect(x, y, foodColor) {

@@ -48,6 +48,11 @@ export const MONSTER_TYPES = {
     specialAbility: 'all_seeing',
     hungerDrain: 1.0,
     growthRate: 1.0,
+    preferences: {
+      loved: ['weird', 'abstract'],
+      hated: ['liquid'],
+      hatedFoods: ['dirtyWater', 'mud', 'poison', 'sock', 'eyeball'],
+    }
   },
   
   // 史莱姆魔 - 半透明果冻生物
@@ -76,6 +81,11 @@ export const MONSTER_TYPES = {
     specialAbility: 'jelly_absorb',
     hungerDrain: 0.9,
     growthRate: 1.0,
+    preferences: {
+      loved: ['liquid', 'nature'],
+      hated: ['weird'],
+      hatedFoods: ['battery', 'sock', 'key', 'eyeball', 'gunpowder'],
+    }
   },
   
   // 幽灵魔 - 漂浮的小幽灵
@@ -86,7 +96,7 @@ export const MONSTER_TYPES = {
     category: 'weird',
     parts: {
       body: { sprite: 'monsters/ghostmon/body', anchor: 'center', z: 0, pos: { x: 0, y: 10 } },
-      witchHat: { sprite: 'monsters/ghostmon/witch-hat', anchor: 'center', z: 4, pos: { x: 5, y: -50 }, scale: 0.8 },
+      witchHat: { sprite: 'monsters/ghostmon/witch-hat', anchor: 'center', z: 4, pos: { x: 5, y: -115 }, scale: 0.8 },
       eye: { sprite: 'monsters/ghostmon/eye', anchor: 'center', z: 2, pos: { x: 0, y: -5 } },
       mouth: { 
         closed: { sprite: 'monsters/ghostmon/mouth-closed', anchor: 'center', z: 1, pos: { x: 0, y: 25 } },
@@ -101,6 +111,11 @@ export const MONSTER_TYPES = {
     specialAbility: 'recipe_hint',
     hungerDrain: 0.8,
     growthRate: 1.0,
+    preferences: {
+      loved: ['abstract', 'delicious'],
+      hated: ['nature'],
+      hatedFoods: ['branch', 'rock', 'leaf', 'mushroom', 'bone'],
+    }
   },
   
   // 毛球魔 - 毛茸茸团子
@@ -131,6 +146,11 @@ export const MONSTER_TYPES = {
     specialAbility: 'fluffy_eat',
     hungerDrain: 1.1,
     growthRate: 1.0,
+    preferences: {
+      loved: ['delicious', 'nature'],
+      hated: ['weird', 'liquid'],
+      hatedFoods: ['dirtyWater', 'mud', 'poison', 'battery', 'sock', 'eyeball'],
+    }
   },
 };
 
@@ -518,6 +538,119 @@ export function createMonster(x, y, type = null) {
       });
     };
     
+    // 恶心动画 - 连续吃厌恶食物时触发
+    monster.setDisgust = () => {
+      currentState = 'disgust';
+      setMouthOpen(true);
+      
+      // 保存原始颜色
+      const originalColors = {};
+      if (parts.body) originalColors.body = parts.body.color ? { r: parts.body.color.r, g: parts.body.color.g, b: parts.body.color.b } : null;
+      if (parts.coreEye) originalColors.coreEye = parts.coreEye.color ? { r: parts.coreEye.color.r, g: parts.coreEye.color.g, b: parts.coreEye.color.b } : null;
+      if (parts.eye) originalColors.eye = parts.eye.color ? { r: parts.eye.color.r, g: parts.eye.color.g, b: parts.eye.color.b } : null;
+      if (parts.eyes) originalColors.eyes = parts.eyes.map(e => e.color ? { r: e.color.r, g: e.color.g, b: e.color.b } : null);
+      
+      let disgustPhase = 0;
+      const disgustAnim = onUpdate(() => {
+        disgustPhase += dt();
+        
+        // 身体左右摇晃
+        const wobble = Math.sin(disgustPhase * 15) * 10;
+        monster.angle = wobble;
+        
+        // 身体轻微下沉
+        const squish = 1 + Math.sin(disgustPhase * 10) * 0.05;
+        if (parts.body) {
+          parts.body.scale = vec2(squish * 1.05, squish * 0.95);
+        }
+        
+        // 身体变绿（恶心色）
+        const greenTint = Math.min(1, disgustPhase * 0.5);
+        if (parts.body && !originalColors.body) {
+          parts.body.color = rgb(180 + greenTint * 20, 200 + greenTint * 30, 180 - greenTint * 40);
+        }
+        
+        // 眼睛变小/眯眼
+        if (parts.coreEye) {
+          const eyeSquint = 0.6 + Math.sin(disgustPhase * 8) * 0.2;
+          parts.coreEye.scale = vec2(eyeSquint);
+        }
+        if (parts.eye) {
+          const eyeSquint = 0.6 + Math.sin(disgustPhase * 8) * 0.2;
+          parts.eye.scale = vec2(eyeSquint);
+        }
+        if (parts.eyes) {
+          parts.eyes.forEach((eye) => {
+            const eyeSquint = 0.6 + Math.sin(disgustPhase * 8) * 0.2;
+            eye.scale = vec2(eyeSquint);
+          });
+        }
+        
+        // 触手/尾巴剧烈摇摆
+        if (parts.tentacles) {
+          parts.tentacles.forEach((t, i) => {
+            const baseRot = i === 0 ? -15 : 15;
+            t.angle = baseRot + Math.sin(disgustPhase * 12 + i) * 25;
+          });
+        }
+        if (parts.tail) {
+          const baseAngle = config.parts.tail.rotation || 20;
+          parts.tail.angle = baseAngle + Math.sin(disgustPhase * 15) * 30;
+        }
+        
+        // 毛发炸开（毛球魔）
+        if (parts.earTufts) {
+          parts.earTufts.forEach((t, i) => {
+            const baseRot = config.parts.earTufts[i].rotation;
+            t.angle = baseRot + Math.sin(disgustPhase * 10 + i) * 20;
+            t.scale = vec2(0.7 + Math.sin(disgustPhase * 8) * 0.15);
+          });
+        }
+        if (parts.furStrands) {
+          parts.furStrands.forEach((f, i) => {
+            const baseRot = config.parts.furStrands[i].rotation;
+            f.angle = baseRot + Math.sin(disgustPhase * 12 + i * 0.5) * 25;
+          });
+        }
+        
+        // 史莱姆魔身体抖动变形
+        if (parts.floaties) {
+          parts.floaties.forEach((f, i) => {
+            const basePos = config.parts.floaties[i].pos;
+            const angle = disgustPhase * 3 + i * 2;
+            const radius = 5 + Math.sin(disgustPhase * 5) * 3;
+            f.pos.x = basePos.x + Math.cos(angle) * radius;
+            f.pos.y = basePos.y + Math.sin(angle) * radius;
+          });
+        }
+        
+        // 呕吐粒子效果
+        if (Math.random() < 0.15) {
+          createVomitParticle(monster.pos.x, monster.pos.y + 30);
+        }
+        
+        // 动画持续1.5秒后结束
+        if (disgustPhase > 1.5) {
+          disgustAnim.cancel();
+          monster.angle = 0;
+          
+          // 恢复身体缩放
+          if (parts.body) parts.body.scale = vec2(1);
+          
+          // 恢复眼睛
+          if (parts.coreEye) parts.coreEye.scale = vec2(1);
+          if (parts.eye) parts.eye.scale = vec2(1);
+          if (parts.eyes) parts.eyes.forEach((eye, i) => {
+            const baseScale = config.parts.eyes[i].scale || 1;
+            eye.scale = vec2(baseScale);
+          });
+          
+          setMouthOpen(false);
+          monster.setIdle();
+        }
+      });
+    };
+    
     monster.grow = (amount) => {
       targetScale = Math.min(2.5, targetScale + amount);
       createGrowEffect(monster.pos);
@@ -801,6 +934,28 @@ function createGrowEffect(position) {
       },
     ]);
   }
+}
+
+/**
+ * 呕吐粒子效果 - 恶心动画时使用
+ */
+function createVomitParticle(x, y) {
+  // 绿色气泡
+  add([
+    circle(rand(3, 7)),
+    pos(x + rand(-15, 15), y),
+    color(100, 180 + rand(0, 50), 100),
+    opacity(0.7),
+    lifespan(0.6),
+    z(15),
+    {
+      update() {
+        this.pos.y -= 40 * dt();
+        this.pos.x += rand(-20, 20) * dt();
+        this.opacity -= 0.3 * dt();
+      }
+    },
+  ]);
 }
 
 export function getMonster() {

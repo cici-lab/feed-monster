@@ -2,7 +2,7 @@ import kaplay from 'kaplay';
 import { createMonster, updateMonsterPosition, loadSavedMonsterType, setMonsterType } from './monster.js';
 import { createFood, FOOD_TYPES, initFoodSystem, clearAllActiveFoods } from './food.js';
 import { createUI, initFullscreenControls, createTitleScreen, createGameOverScreen } from './ui.js';
-import { initDragSystem } from './drag.js';
+import { initDragSystem, resetDisgustCount } from './drag.js';
 import { gameState, saveGame, loadGame, resetGameState, checkGameOver } from './state.js';
 import { createForge } from './forge.js';
 import { initRecipeSystem } from './recipes.js';
@@ -124,6 +124,9 @@ scene('gameover', () => {
 scene('game', () => {
   // 重置游戏状态
   resetGameState();
+  
+  // 重置厌恶计数器
+  resetDisgustCount();
   
   // 清除所有活跃食物（修复死亡后食物不再飘出的问题）
   clearAllActiveFoods();

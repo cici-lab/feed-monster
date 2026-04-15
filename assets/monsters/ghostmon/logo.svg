@@ -14,6 +14,16 @@
     </linearGradient>
   </defs>
   
+  <!-- 巫师帽 - 先绘制，在身体下方 -->
+  <!-- 帽檐 -->
+  <ellipse cx="50" cy="18" rx="28" ry="8" fill="#303050"/>
+  <!-- 帽身 -->
+  <path d="M 35 18 Q 30 -5 50 -15 Q 70 -5 65 18 Z" fill="url(#hatGrad)"/>
+  <!-- 帽带 -->
+  <ellipse cx="50" cy="8" rx="12" ry="4" fill="url(#bandGrad)"/>
+  <!-- 帽带星星 -->
+  <polygon points="50,2 51,6 55,6 52,9 53,13 50,10 47,13 48,9 45,6 49,6" fill="#ffd050"/>
+  
   <!-- 简化的幽灵身体 -->
   <path d="M 25 65 
            Q 20 45 30 30 
@@ -27,13 +37,6 @@
            Q 30 80 25 75
            Z" 
         fill="url(#ghostGrad)"/>
-  
-  <!-- 巫师帽 -->
-  <path d="M 30 40 Q 35 20 50 15 Q 65 20 60 40 L 55 35 Q 50 10 45 35 Z" 
-        fill="url(#hatGrad)"/>
-  
-  <!-- 帽带 -->
-  <ellipse cx="47" cy="38" rx="10" ry="3" fill="url(#bandGrad)"/>
   
   <!-- 独眼 -->
   <circle cx="50" cy="55" r="12" fill="#ffffff"/>

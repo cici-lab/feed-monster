@@ -10,6 +10,7 @@ import { initEncyclopediaSystem } from './encyclopedia.js';
 import { initRecipePanelSystem } from './recipePanel.js';
 import { initConsoleControls, registerCraftTrigger, registerFullscreenToggle } from './console.js';
 import { initMonsterSelectSystem, showMonsterSelect, hideMonsterSelect } from './monsterSelect.js';
+import { initCursorHealth, cleanupCursorHealth, resetCursorHealth, cursorState } from './cursorHealth.js';
 
 // 初始化 Kaplay 游戏引擎
 kaplay({
@@ -74,6 +75,9 @@ loadSprite('monsters/furballmon/logo', '/assets/monsters/furballmon/logo.svg');
 
 // 标题场景
 scene('title', () => {
+  // 清理鼠标光环系统
+  cleanupCursorHealth();
+  
   // 加载存档和怪兽选择
   loadGame();
   loadSavedMonsterType();
@@ -100,6 +104,9 @@ scene('title', () => {
 
 // 游戏结束场景
 scene('gameover', () => {
+  // 清理鼠标光环系统
+  cleanupCursorHealth();
+  
   createGameOverScreen(gameState.score, gameState.highScore);
   
   // 点击重新开始 - 显示怪兽选择
@@ -127,6 +134,12 @@ scene('game', () => {
   
   // 重置厌恶计数器
   resetDisgustCount();
+  
+  // 重置鼠标血量
+  resetCursorHealth();
+  
+  // 初始化鼠标光环系统
+  const cursorHealth = initCursorHealth();
   
   // 清除所有活跃食物（修复死亡后食物不再飘出的问题）
   clearAllActiveFoods();

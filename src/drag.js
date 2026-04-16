@@ -5,7 +5,7 @@
 
 import { getMonster, getCurrentMonsterConfig } from './monster.js';
 import { getActiveFoods, FOOD_TYPES } from './food.js';
-import { gameState } from './state.js';
+import { gameState, triggerFeedFeedback } from './state.js';
 import { getUIRefs } from './ui.js';
 import { isFoodInForge, addFoodToForge, canCraft, craft, isClickOnForge, getForgeElement } from './forge.js';
 import { checkRecipe, unlockRecipe, RARITY_CONFIG } from './recipes.js';
@@ -421,6 +421,9 @@ function feedMonster(food) {
     // 分数减半
     points = Math.floor(points / 2);
     
+    // 触发厌恶反馈（光环震荡）
+    triggerFeedFeedback('hated');
+    
     // 显示厌恶提示
     showDisgustWarning(food.pos.x, food.pos.y, disgustCount);
     
@@ -452,6 +455,15 @@ function feedMonster(food) {
     // 怪物反应
     if (monster && monster.setEating) {
       monster.setEating();
+    }
+    
+    // 根据食物类型显示不同反应和光环反馈
+    if (foodType.reaction === 'love' || foodType.reaction === 'happy') {
+      // 喜爱的食物 - 触发光环爱心效果
+      triggerFeedFeedback('loved');
+    } else {
+      // 普通食物 - 触发普通反馈
+      triggerFeedFeedback('liked');
     }
     
     // 根据食物类型显示不同反应

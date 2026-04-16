@@ -3,6 +3,9 @@
  * 支持部件化渲染、动画系统、进化系统
  */
 
+import { getCursorPos, takeDamage, heal, cursorState, triggerPulse } from './cursorHealth.js';
+import { gameState, updateMonsterMood, triggerFeedFeedback } from './state.js';
+
 let monsterInstance = null;
 let baseY = 0;
 
@@ -255,16 +258,19 @@ export function createMonster(x, y, type = null) {
       currentState = 'idle'; 
       spriteObj.color = rgb(255, 255, 255); 
       spriteObj.scale = vec2(1.2);
+      updateMonsterMood(gameState.hunger);
     };
     monster.setHappy = () => { 
       cancelCurrentAnim();
       spriteObj.color = rgb(255, 255, 230); 
       spriteObj.scale = vec2(1.25); 
+      updateMonsterMood(gameState.hunger);
     };
     monster.setSad = () => { 
       cancelCurrentAnim();
       spriteObj.color = rgb(200, 200, 255); 
       spriteObj.scale = vec2(1.1); 
+      updateMonsterMood(gameState.hunger);
     };
     monster.setEating = () => { 
       cancelCurrentAnim();
@@ -498,11 +504,13 @@ export function createMonster(x, y, type = null) {
     monster.setIdle = () => {
       currentState = 'idle';
       setMouthOpen(false);
+      updateMonsterMood(gameState.hunger);
     };
     
     monster.setHappy = () => {
       currentState = 'happy';
       setMouthOpen(true);
+      updateMonsterMood(gameState.hunger);
       // 跳跃效果
       let jumpPhase = 0;
       const jumpAnim = onUpdate(() => {
@@ -519,6 +527,7 @@ export function createMonster(x, y, type = null) {
     monster.setSad = () => {
       currentState = 'sad';
       setMouthOpen(false);
+      updateMonsterMood(gameState.hunger);
       if (parts.coreEye) {
         parts.coreEye.color = rgb(200, 200, 220);
       }
@@ -540,6 +549,9 @@ export function createMonster(x, y, type = null) {
     
     // 恶心动画 - 连续吃厌恶食物时触发
     monster.setDisgust = () => {
+      // 防止重复触发
+      if (currentState === 'disgust') return;
+      
       currentState = 'disgust';
       setMouthOpen(true);
       
@@ -551,7 +563,15 @@ export function createMonster(x, y, type = null) {
       if (parts.eyes) originalColors.eyes = parts.eyes.map(e => e.color ? { r: e.color.r, g: e.color.g, b: e.color.b } : null);
       
       let disgustPhase = 0;
+      let isAnimCancelled = false;
+      
       const disgustAnim = onUpdate(() => {
+        // 安全检查：如果动画已被取消或状态已改变，立即退出
+        if (isAnimCancelled || currentState !== 'disgust') {
+          disgustAnim.cancel();
+          return;
+        }
+        
         disgustPhase += dt();
         
         // 身体左右摇晃
@@ -560,40 +580,44 @@ export function createMonster(x, y, type = null) {
         
         // 身体轻微下沉
         const squish = 1 + Math.sin(disgustPhase * 10) * 0.05;
-        if (parts.body) {
+        if (parts.body && parts.body.exists()) {
           parts.body.scale = vec2(squish * 1.05, squish * 0.95);
         }
         
         // 身体变绿（恶心色）
         const greenTint = Math.min(1, disgustPhase * 0.5);
-        if (parts.body && !originalColors.body) {
+        if (parts.body && parts.body.exists() && !originalColors.body) {
           parts.body.color = rgb(180 + greenTint * 20, 200 + greenTint * 30, 180 - greenTint * 40);
         }
         
         // 眼睛变小/眯眼
-        if (parts.coreEye) {
+        if (parts.coreEye && parts.coreEye.exists()) {
           const eyeSquint = 0.6 + Math.sin(disgustPhase * 8) * 0.2;
           parts.coreEye.scale = vec2(eyeSquint);
         }
-        if (parts.eye) {
+        if (parts.eye && parts.eye.exists()) {
           const eyeSquint = 0.6 + Math.sin(disgustPhase * 8) * 0.2;
           parts.eye.scale = vec2(eyeSquint);
         }
         if (parts.eyes) {
           parts.eyes.forEach((eye) => {
-            const eyeSquint = 0.6 + Math.sin(disgustPhase * 8) * 0.2;
-            eye.scale = vec2(eyeSquint);
+            if (eye && eye.exists()) {
+              const eyeSquint = 0.6 + Math.sin(disgustPhase * 8) * 0.2;
+              eye.scale = vec2(eyeSquint);
+            }
           });
         }
         
         // 触手/尾巴剧烈摇摆
         if (parts.tentacles) {
           parts.tentacles.forEach((t, i) => {
-            const baseRot = i === 0 ? -15 : 15;
-            t.angle = baseRot + Math.sin(disgustPhase * 12 + i) * 25;
+            if (t && t.exists()) {
+              const baseRot = i === 0 ? -15 : 15;
+              t.angle = baseRot + Math.sin(disgustPhase * 12 + i) * 25;
+            }
           });
         }
-        if (parts.tail) {
+        if (parts.tail && parts.tail.exists()) {
           const baseAngle = config.parts.tail.rotation || 20;
           parts.tail.angle = baseAngle + Math.sin(disgustPhase * 15) * 30;
         }
@@ -601,48 +625,57 @@ export function createMonster(x, y, type = null) {
         // 毛发炸开（毛球魔）
         if (parts.earTufts) {
           parts.earTufts.forEach((t, i) => {
-            const baseRot = config.parts.earTufts[i].rotation;
-            t.angle = baseRot + Math.sin(disgustPhase * 10 + i) * 20;
-            t.scale = vec2(0.7 + Math.sin(disgustPhase * 8) * 0.15);
+            if (t && t.exists() && config.parts.earTufts[i]) {
+              const baseRot = config.parts.earTufts[i].rotation;
+              t.angle = baseRot + Math.sin(disgustPhase * 10 + i) * 20;
+              t.scale = vec2(0.7 + Math.sin(disgustPhase * 8) * 0.15);
+            }
           });
         }
         if (parts.furStrands) {
           parts.furStrands.forEach((f, i) => {
-            const baseRot = config.parts.furStrands[i].rotation;
-            f.angle = baseRot + Math.sin(disgustPhase * 12 + i * 0.5) * 25;
+            if (f && f.exists() && config.parts.furStrands[i]) {
+              const baseRot = config.parts.furStrands[i].rotation;
+              f.angle = baseRot + Math.sin(disgustPhase * 12 + i * 0.5) * 25;
+            }
           });
         }
         
         // 史莱姆魔身体抖动变形
         if (parts.floaties) {
           parts.floaties.forEach((f, i) => {
-            const basePos = config.parts.floaties[i].pos;
-            const angle = disgustPhase * 3 + i * 2;
-            const radius = 5 + Math.sin(disgustPhase * 5) * 3;
-            f.pos.x = basePos.x + Math.cos(angle) * radius;
-            f.pos.y = basePos.y + Math.sin(angle) * radius;
+            if (f && f.exists() && config.parts.floaties[i]) {
+              const basePos = config.parts.floaties[i].pos;
+              const angle = disgustPhase * 3 + i * 2;
+              const radius = 5 + Math.sin(disgustPhase * 5) * 3;
+              f.pos.x = basePos.x + Math.cos(angle) * radius;
+              f.pos.y = basePos.y + Math.sin(angle) * radius;
+            }
           });
         }
         
-        // 呕吐粒子效果
-        if (Math.random() < 0.15) {
+        // 呕吐粒子效果（降低频率）
+        if (Math.random() < 0.1) {
           createVomitParticle(monster.pos.x, monster.pos.y + 30);
         }
         
         // 动画持续1.5秒后结束
         if (disgustPhase > 1.5) {
+          isAnimCancelled = true;
           disgustAnim.cancel();
           monster.angle = 0;
           
           // 恢复身体缩放
-          if (parts.body) parts.body.scale = vec2(1);
+          if (parts.body && parts.body.exists()) parts.body.scale = vec2(1);
           
           // 恢复眼睛
-          if (parts.coreEye) parts.coreEye.scale = vec2(1);
-          if (parts.eye) parts.eye.scale = vec2(1);
+          if (parts.coreEye && parts.coreEye.exists()) parts.coreEye.scale = vec2(1);
+          if (parts.eye && parts.eye.exists()) parts.eye.scale = vec2(1);
           if (parts.eyes) parts.eyes.forEach((eye, i) => {
-            const baseScale = config.parts.eyes[i].scale || 1;
-            eye.scale = vec2(baseScale);
+            if (eye && eye.exists()) {
+              const baseScale = config.parts.eyes[i]?.scale || 1;
+              eye.scale = vec2(baseScale);
+            }
           });
           
           setMouthOpen(false);
@@ -655,6 +688,307 @@ export function createMonster(x, y, type = null) {
       targetScale = Math.min(2.5, targetScale + amount);
       createGrowEffect(monster.pos);
     };
+    
+    // ========== 怪物与鼠标互动 AI ==========
+    
+    // 互动状态
+    let interactionState = 'idle'; // idle, chase, flee, attack, heal
+    let interactionTimer = 0;
+    let interactionCooldown = 0;
+    const INTERACTION_INTERVAL = 3; // 互动检查间隔
+    const CHASE_SPEED = 80;
+    const FLEE_SPEED = 100;
+    const ATTACK_RANGE = 120;
+    const HEAL_RANGE = 100;
+    
+    // 发射物数组
+    const projectiles = [];
+    
+    // 更新互动 AI
+    function updateInteractionAI() {
+      if (currentState !== 'idle') return; // 只在空闲状态下互动
+      
+      interactionTimer += dt();
+      interactionCooldown -= dt();
+      
+      if (interactionTimer < INTERACTION_INTERVAL) return;
+      interactionTimer = 0;
+      
+      // 安全获取鼠标位置
+      let cursorPos;
+      try {
+        cursorPos = getCursorPos();
+        if (!cursorPos || typeof cursorPos.x !== 'number' || typeof cursorPos.y !== 'number') {
+          return; // 位置无效，跳过本次更新
+        }
+      } catch (e) {
+        return; // 获取位置出错，跳过本次更新
+      }
+      
+      const dx = cursorPos.x - monster.pos.x;
+      const dy = cursorPos.y - monster.pos.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      // 根据怪物心情决定行为
+      const rand = Math.random();
+      
+      if (gameState.hunger > 70) {
+        // 开心状态：追逐或治愈鼠标
+        if (rand < 0.4 && distance > 100) {
+          startChase(cursorPos);
+        } else if (rand < 0.6 && distance < HEAL_RANGE) {
+          startHeal(cursorPos);
+        }
+      } else if (gameState.hunger < 30) {
+        // 伤心状态：躲避或攻击鼠标
+        if (rand < 0.5) {
+          startFlee(cursorPos);
+        } else if (rand < 0.7 && distance < ATTACK_RANGE) {
+          startAttack(cursorPos);
+        }
+      } else {
+        // 中等状态：随机行为
+        if (rand < 0.2 && distance > 150) {
+          startChase(cursorPos);
+        } else if (rand < 0.3) {
+          startFlee(cursorPos);
+        }
+      }
+    }
+    
+    // 开始追逐鼠标
+    function startChase(targetPos) {
+      if (interactionCooldown > 0) return;
+      interactionState = 'chase';
+      interactionCooldown = 2;
+      
+      showInteractionEmoji('→', monster.pos.x, monster.pos.y - 50, [100, 200, 150]);
+      
+      const chaseDuration = 1.5;
+      let chaseTime = 0;
+      let heartTimer = 0; // 爱心生成计时器
+      
+      const chaseAnim = onUpdate(() => {
+        chaseTime += dt();
+        if (chaseTime >= chaseDuration || interactionState !== 'chase') {
+          chaseAnim.cancel();
+          interactionState = 'idle';
+          return;
+        }
+        
+        const currentTarget = getCursorPos();
+        const dx = currentTarget.x - monster.pos.x;
+        const dy = currentTarget.y - monster.pos.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist > 30) {
+          monster.pos.x += (dx / dist) * CHASE_SPEED * dt();
+          monster.pos.y += (dy / dist) * CHASE_SPEED * dt();
+          
+          // 更新 baseY 以保持浮动
+          baseY = monster.pos.y;
+        }
+        
+        // 接近时显示爱心（限制频率）
+        heartTimer += dt();
+        if (dist < 60 && heartTimer > 0.3) {
+          heartTimer = 0;
+          createHeartParticle(monster.pos.x, monster.pos.y - 40);
+        }
+      });
+    }
+    
+    // 开始躲避鼠标
+    function startFlee(cursorPos) {
+      if (interactionCooldown > 0) return;
+      interactionState = 'flee';
+      interactionCooldown = 2;
+      
+      showInteractionEmoji('!', monster.pos.x, monster.pos.y - 50, [255, 150, 100]);
+      
+      const fleeDuration = 1;
+      let fleeTime = 0;
+      
+      const fleeAnim = onUpdate(() => {
+        fleeTime += dt();
+        if (fleeTime >= fleeDuration || interactionState !== 'flee') {
+          fleeAnim.cancel();
+          interactionState = 'idle';
+          return;
+        }
+        
+        const currentCursor = getCursorPos();
+        const dx = monster.pos.x - currentCursor.x;
+        const dy = monster.pos.y - currentCursor.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < 200) {
+          monster.pos.x += (dx / dist) * FLEE_SPEED * dt();
+          monster.pos.y += (dy / dist) * FLEE_SPEED * dt();
+          baseY = monster.pos.y;
+        }
+      });
+    }
+    
+    // 开始攻击鼠标
+    function startAttack(targetPos) {
+      if (interactionCooldown > 0) return;
+      interactionState = 'attack';
+      interactionCooldown = 3;
+      
+      showInteractionEmoji('⚔', monster.pos.x, monster.pos.y - 50, [255, 100, 100]);
+      
+      // 发射攻击弹幕
+      const dx = targetPos.x - monster.pos.x;
+      const dy = targetPos.y - monster.pos.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      
+      if (dist > 0) {
+        const dirX = dx / dist;
+        const dirY = dy / dist;
+        
+        // 发射 3 个弹幕
+        for (let i = -1; i <= 1; i++) {
+          const angle = Math.atan2(dirY, dirX) + i * 0.3;
+          const projectile = add([
+            circle(8),
+            pos(monster.pos.x, monster.pos.y),
+            color(255, 100, 100),
+            opacity(1),
+            z(20),
+            'projectile',
+          ]);
+          
+          projectiles.push({
+            obj: projectile,
+            vx: Math.cos(angle) * 200,
+            vy: Math.sin(angle) * 200,
+            damage: 15,
+            life: 2,
+          });
+        }
+      }
+      
+      // 攻击结束后恢复 - 使用wait代替setTimeout
+      wait(0.5, () => {
+        interactionState = 'idle';
+      });
+    }
+    
+    // 开始治愈鼠标（舔舐/发射爱心）
+    function startHeal(targetPos) {
+      if (interactionCooldown > 0) return;
+      interactionState = 'heal';
+      interactionCooldown = 4;
+      
+      showInteractionEmoji('♥', monster.pos.x, monster.pos.y - 50, [255, 150, 200]);
+      
+      // 发射治愈爱心
+      const heart = add([
+        text('♥', { size: 24 }),
+        pos(monster.pos.x, monster.pos.y - 30),
+        color(255, 100, 150),
+        opacity(1),
+        z(20),
+        'heart-projectile',
+      ]);
+      
+      const dx = targetPos.x - monster.pos.x;
+      const dy = targetPos.y - monster.pos.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      
+      if (dist > 0) {
+        projectiles.push({
+          obj: heart,
+          vx: (dx / dist) * 120,
+          vy: (dy / dist) * 120,
+          heal: 10,
+          life: 2,
+          isHeart: true,
+        });
+      } else {
+        heart.destroy();
+      }
+      
+      // 恢复结束后 - 使用wait代替setTimeout
+      wait(0.8, () => {
+        interactionState = 'idle';
+      });
+    }
+    
+    // 更新发射物
+    function updateProjectiles() {
+      const cursorPos = getCursorPos();
+      
+      for (let i = projectiles.length - 1; i >= 0; i--) {
+        const p = projectiles[i];
+        
+        // 安全检查
+        if (!p || !p.obj) {
+          projectiles.splice(i, 1);
+          continue;
+        }
+        
+        p.life -= dt();
+        
+        if (p.life <= 0 || !p.obj.exists()) {
+          if (p.obj.exists()) p.obj.destroy();
+          projectiles.splice(i, 1);
+          continue;
+        }
+        
+        // 移动
+        p.obj.pos.x += p.vx * dt();
+        p.obj.pos.y += p.vy * dt();
+        
+        // 检测与鼠标碰撞
+        const dx = cursorPos.x - p.obj.pos.x;
+        const dy = cursorPos.y - p.obj.pos.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < 30) {
+          if (p.damage) {
+            takeDamage(p.damage, 'monster-attack');
+            createHitEffect(cursorPos.x, cursorPos.y, [255, 100, 100]);
+          } else if (p.heal) {
+            heal(p.heal, 'monster-heal');
+            createHitEffect(cursorPos.x, cursorPos.y, [100, 255, 150]);
+          }
+          
+          if (p.obj.exists()) p.obj.destroy();
+          projectiles.splice(i, 1);
+          continue;
+        }
+        
+        // 淡出
+        if (p.life < 0.5) {
+          p.obj.opacity = p.life * 2;
+        }
+      }
+    }
+    
+    // 清理发射物
+    function cleanupProjectiles() {
+      for (const p of projectiles) {
+        if (p.obj && p.obj.exists()) {
+          p.obj.destroy();
+        }
+      }
+      projectiles.length = 0;
+    }
+    
+    // 添加互动 AI 更新到主循环
+    onUpdate(() => {
+      updateInteractionAI();
+      updateProjectiles();
+    });
+    
+    // 怪物销毁时清理资源
+    monster.onDestroy(() => {
+      cleanupProjectiles();
+    });
+    
+    // ========== 结束互动 AI ==========
     
     // 嘴巴开关
     function setMouthOpen(open) {
@@ -953,6 +1287,96 @@ function createVomitParticle(x, y) {
         this.pos.y -= 40 * dt();
         this.pos.x += rand(-20, 20) * dt();
         this.opacity -= 0.3 * dt();
+      }
+    },
+  ]);
+}
+
+/**
+ * 显示互动表情符号
+ */
+function showInteractionEmoji(emoji, x, y, color) {
+  add([
+    text(emoji, { size: 24 }),
+    pos(x, y),
+    anchor('center'),
+    color(color[0], color[1], color[2]),
+    opacity(1),
+    lifespan(1),
+    z(25),
+    {
+      update() {
+        this.pos.y -= 30 * dt();
+        this.opacity -= dt();
+      }
+    },
+  ]);
+}
+
+/**
+ * 创建爱心粒子
+ */
+function createHeartParticle(x, y) {
+  add([
+    text('♥', { size: 16 }),
+    pos(x + rand(-20, 20), y + rand(-10, 10)),
+    anchor('center'),
+    color(255, 100 + rand(0, 100), 150),
+    opacity(1),
+    lifespan(0.8),
+    z(20),
+    {
+      update() {
+        this.pos.y -= 50 * dt();
+        this.opacity -= dt() * 1.25;
+      }
+    },
+  ]);
+}
+
+/**
+ * 创建命中特效
+ */
+function createHitEffect(x, y, color) {
+  // 粒子爆发
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * Math.PI * 2;
+    const speed = rand(80, 150);
+    
+    add([
+      circle(rand(3, 6)),
+      pos(x, y),
+      color(color[0], color[1], color[2]),
+      opacity(1),
+      lifespan(0.4),
+      z(20),
+      {
+        update() {
+          this.pos.x += Math.cos(angle) * speed * dt();
+          this.pos.y += Math.sin(angle) * speed * dt();
+          this.opacity -= dt() * 2.5;
+        }
+      },
+    ]);
+  }
+  
+  // 命中闪光
+  add([
+    circle(20),
+    pos(x, y),
+    color(color[0], color[1], color[2]),
+    opacity(0.5),
+    anchor('center'),
+    z(19),
+    {
+      life: 0.2,
+      update() {
+        this.life -= dt();
+        this.scale = vec2(1 + (0.2 - this.life) * 3);
+        this.opacity = this.life * 2.5;
+        if (this.life <= 0) {
+          this.destroy();
+        }
       }
     },
   ]);

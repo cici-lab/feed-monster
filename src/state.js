@@ -20,6 +20,53 @@ export const gameState = {
   selectedMonster: 'default', // 选中的怪兽类型
 };
 
+// 怪兽情绪状态（供光环系统读取）
+export const monsterMood = {
+  current: 'normal',      // 'happy' | 'normal' | 'sad'
+  intensity: 0.5,         // 情绪强度 0-1
+  lastChange: 0,          // 上次变化时间戳
+};
+
+/**
+ * 更新怪兽情绪状态
+ * @param {number} hunger - 当前饱食度
+ */
+export function updateMonsterMood(hunger) {
+  const previous = monsterMood.current;
+  
+  if (hunger > 70) {
+    monsterMood.current = 'happy';
+    monsterMood.intensity = (hunger - 70) / 30; // 70→0.0, 100→1.0
+  } else if (hunger < 20) {
+    monsterMood.current = 'sad';
+    monsterMood.intensity = (20 - hunger) / 20; // 20→0.0, 0→1.0
+  } else {
+    monsterMood.current = 'normal';
+    monsterMood.intensity = 0.5;
+  }
+  
+  if (previous !== monsterMood.current) {
+    monsterMood.lastChange = Date.now();
+  }
+}
+
+/**
+ * 触发喂食反馈效果
+ * @param {string} type - 'loved' | 'liked' | 'neutral' | 'hated'
+ */
+export function triggerFeedFeedback(type) {
+  feedFeedback.type = type;
+  feedFeedback.triggered = true;
+  feedFeedback.timestamp = Date.now();
+}
+
+// 喂食反馈状态
+export const feedFeedback = {
+  type: 'neutral',        // 'loved' | 'liked' | 'neutral' | 'hated'
+  triggered: false,
+  timestamp: 0,
+};
+
 /**
  * 保存游戏进度
  */

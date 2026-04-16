@@ -5,6 +5,7 @@
 
 import { showMonsterSelect } from './monsterSelect.js';
 import { setMonsterType } from './monster.js';
+import { cursorState } from './cursorHealth.js';
 
 let scoreDisplay = null;
 let hungerBar = null;
@@ -176,6 +177,93 @@ export function createUI(state) {
     anchor('center'),
     color(200, 200, 220),
   ]);
+
+  // ========== 鼠标血量 UI ==========
+  
+  // 鼠标血量容器 - 右下角
+  const cursorHealthContainer = add([
+    pos(width() - 230, height() - 100),
+    z(30),
+    fixed(),
+  ]);
+  
+  cursorHealthContainer.add([
+    text('鼠标能量', { size: 14 }),
+    pos(0, 0),
+    color(180, 200, 180),
+  ]);
+  
+  // 鼠标血量背景条
+  const cursorHealthBar = cursorHealthContainer.add([
+    rect(200, 20),
+    pos(0, 20),
+    color(40, 40, 60),
+    outline(2, rgb(80, 120, 100)),
+  ]);
+  
+  // 鼠标血量填充
+  const cursorHealthFill = cursorHealthContainer.add([
+    rect(200, 16),
+    pos(2, 22),
+    color(100, 220, 150),
+  ]);
+  
+  // 鼠标血量百分比文字
+  const cursorHealthText = cursorHealthContainer.add([
+    text('100%', { size: 12 }),
+    pos(210, 22),
+    color(200, 200, 200),
+  ]);
+  
+  // 鼠标血量状态指示
+  const cursorStateText = cursorHealthContainer.add([
+    text('', { size: 10 }),
+    pos(100, 45),
+    anchor('center'),
+    color(150, 150, 180),
+  ]);
+  
+  // 更新鼠标血量显示
+  onUpdate(() => {
+    // 更新容器位置
+    cursorHealthContainer.pos.x = width() - 230;
+    cursorHealthContainer.pos.y = height() - 100;
+    
+    // 更新血量条
+    const healthPercent = cursorState.health / cursorState.maxHealth;
+    const barWidth = Math.max(0, healthPercent * 196);
+    cursorHealthFill.width = barWidth;
+    
+    // 根据血量改变颜色
+    if (cursorState.isWeak) {
+      cursorHealthFill.color = rgb(150, 100, 180);
+    } else if (healthPercent > 0.6) {
+      cursorHealthFill.color = rgb(100, 220, 150);
+    } else if (healthPercent > 0.3) {
+      cursorHealthFill.color = rgb(220, 200, 80);
+    } else {
+      cursorHealthFill.color = rgb(220, 80, 80);
+    }
+    
+    // 更新百分比文字
+    cursorHealthText.text = `${Math.floor(cursorState.health)}%`;
+    
+    // 更新状态指示
+    if (cursorState.isWeak) {
+      cursorStateText.text = '⚠ 虚弱状态';
+      cursorStateText.color = rgb(150, 100, 180);
+    } else if (healthPercent < 0.3) {
+      cursorStateText.text = '⚠ 能量不足';
+      cursorStateText.color = rgb(220, 80, 80);
+    } else if (healthPercent > 0.8) {
+      cursorStateText.text = '✓ 能量充沛';
+      cursorStateText.color = rgb(100, 200, 150);
+    } else {
+      cursorStateText.text = '';
+    }
+  });
+  
+  // ========== 结束鼠标血量 UI ==========
 
   // 更新函数
   function updateScore(score) {

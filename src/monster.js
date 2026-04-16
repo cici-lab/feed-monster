@@ -781,7 +781,7 @@ export function createMonster(x, y, type = null) {
         const dy = currentTarget.y - monster.pos.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         
-        if (dist > 30) {
+        if (dist > 30 && dist > 0) {
           monster.pos.x += (dx / dist) * CHASE_SPEED * dt();
           monster.pos.y += (dy / dist) * CHASE_SPEED * dt();
           
@@ -822,7 +822,7 @@ export function createMonster(x, y, type = null) {
         const dy = monster.pos.y - currentCursor.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         
-        if (dist < 200) {
+        if (dist < 200 && dist > 0) {
           monster.pos.x += (dx / dist) * FLEE_SPEED * dt();
           monster.pos.y += (dy / dist) * FLEE_SPEED * dt();
           baseY = monster.pos.y;
@@ -1295,12 +1295,12 @@ function createVomitParticle(x, y) {
 /**
  * 显示互动表情符号
  */
-function showInteractionEmoji(emoji, x, y, color) {
+function showInteractionEmoji(emoji, x, y, tint) {
   add([
     text(emoji, { size: 24 }),
     pos(x, y),
     anchor('center'),
-    color(color[0], color[1], color[2]),
+    color(tint[0], tint[1], tint[2]),
     opacity(1),
     lifespan(1),
     z(25),
@@ -1337,7 +1337,7 @@ function createHeartParticle(x, y) {
 /**
  * 创建命中特效
  */
-function createHitEffect(x, y, color) {
+function createHitEffect(x, y, tint) {
   // 粒子爆发
   for (let i = 0; i < 8; i++) {
     const angle = (i / 8) * Math.PI * 2;
@@ -1346,7 +1346,7 @@ function createHitEffect(x, y, color) {
     add([
       circle(rand(3, 6)),
       pos(x, y),
-      color(color[0], color[1], color[2]),
+      color(tint[0], tint[1], tint[2]),
       opacity(1),
       lifespan(0.4),
       z(20),
@@ -1364,7 +1364,7 @@ function createHitEffect(x, y, color) {
   add([
     circle(20),
     pos(x, y),
-    color(color[0], color[1], color[2]),
+    color(tint[0], tint[1], tint[2]),
     opacity(0.5),
     anchor('center'),
     z(19),

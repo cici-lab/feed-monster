@@ -28,6 +28,7 @@ let innerRing = null;
 let core = null;
 let pulseRing = null;
 let updateHandler = null;
+let lastFeedFeedbackHandledAt = 0;
 
 // 粒子数组
 let trailParticles = [];
@@ -91,9 +92,9 @@ export function initCursorHealth() {
   // 隐藏系统鼠标
   const canvas = document.getElementById('game-container');
   if (canvas) {
-    canvas.style.cursor = 'none';
+    canvas.style.cursor = 'auto';
   }
-  document.body.style.cursor = 'none';
+  document.body.style.cursor = 'auto';
   
   const initialPos = mousePos();
   cursorState.lastPos = { x: initialPos.x, y: initialPos.y };
@@ -166,6 +167,9 @@ export function initCursorHealth() {
     updateFeedFeedback();
   });
   
+  // 每次初始化都重置反馈处理时间，避免跨场景重复触发
+  lastFeedFeedbackHandledAt = 0;
+  
   return {
     takeDamage,
     heal,
@@ -196,7 +200,7 @@ function updateCursorPosition() {
   
   // 移动消耗血量（限制最大消耗）
   if (cursorState.isMoving && !cursorState.isWeak) {
-    const cost = Math.min(distance * CONFIG.moveCost * cursorState.moveSpeed * 0.001, 1);
+    const cost = Math.min(distance * cursorState.moveCost * cursorState.moveSpeed * 0.001, 1);
     cursorState.health = Math.max(0, cursorState.health - cost);
   }
   
@@ -475,6 +479,15 @@ function updateSparkles() {
     p.obj.pos.y += p.vy * dt();
     p.obj.opacity = p.life * 1.75;
   }
+  
+  // 安全阈值：防止异常情况下粒子无限增长导致卡死
+  const maxTotalSparkles = CONFIG.maxSparkles + 32;
+  while (sparkleParticles.length > maxTotalSparkles) {
+    const p = sparkleParticles.shift();
+    if (p?.obj?.exists && p.obj.exists()) {
+      p.obj.destroy();
+    }
+  }
 }
 
 /**
@@ -521,8 +534,9 @@ function updateFeedFeedback() {
   if (feedFeedback.triggered) {
     const elapsed = Date.now() - feedFeedback.timestamp;
     
-    // 触发后 100ms 内执行反馈
-    if (elapsed < 100) {
+    // 每次 triggerFeedFeedback 只处理一次，避免 100ms 窗口内每帧重复生成粒子
+    if (feedFeedback.timestamp !== lastFeedFeedbackHandledAt && elapsed < 300) {
+      lastFeedFeedbackHandledAt = feedFeedback.timestamp;
       const currentPos = mainRing && mainRing.exists() ? mainRing.pos : mousePos();
       
       if (feedFeedback.type === 'loved') {
@@ -537,8 +551,8 @@ function updateFeedFeedback() {
       }
     }
     
-    // 200ms 后重置
-    if (elapsed > 200) {
+    // 反馈处理完成后尽快重置
+    if (elapsed > 300) {
       feedFeedback.triggered = false;
     }
   }
@@ -767,7 +781,11 @@ export function cleanupCursorHealth() {
   // 取消更新处理器
   if (updateHandler) {
     try {
-      updateHandler.cancel();
+      if (typeof updateHandler.cancel === 'function') {
+        updateHandler.cancel();
+      } else if (typeof updateHandler === 'function') {
+        updateHandler();
+      }
     } catch (e) {}
     updateHandler = null;
   }
@@ -810,6 +828,7 @@ export function cleanupCursorHealth() {
   innerRing = null;
   core = null;
   pulseRing = null;
+  lastFeedFeedbackHandledAt = 0;
 }
 
 /**

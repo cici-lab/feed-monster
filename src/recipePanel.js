@@ -2,7 +2,7 @@
  * 配方面板模块 - HTML弹窗版本
  */
 
-import { RARITY_CONFIG, getAllRecipes, isRecipeUnlocked, getRecipeHint, getRecipeProgress } from './recipes.js';
+import { RARITY_CONFIG, getAllRecipes, isRecipeUnlocked, getRecipeHint, getRecipeProgress, checkRecipeUnlockThreshold, getRecipeUnlockHint, getUnlockProgress, RARITY_THRESHOLDS } from './recipes.js';
 import { registerRecipePanelFuncs } from './console.js';
 
 let isOpen = false;
@@ -50,40 +50,71 @@ function renderRecipeList() {
 
   const recipes = getAllRecipes();
   const progress = getRecipeProgress();
+  const unlockProgress = getUnlockProgress();
 
-  // 更新进度
+  // 更新进度（配方已发现数量 + 最高分解锁进度）
   if (progressEl) {
-    progressEl.textContent = `${progress.unlocked}/${progress.total} 已解锁`;
+    progressEl.textContent = `${progress.unlocked}/${progress.total} 已发现 | 最高分: ${unlockProgress.highScore}`;
   }
 
   // 渲染列表
   container.innerHTML = '';
 
   recipes.forEach(recipe => {
-    const unlocked = isRecipeUnlocked(recipe.id);
+    const discovered = isRecipeUnlocked(recipe.id);
+    const rarityUnlocked = checkRecipeUnlockThreshold(recipe.id);
     const rCfg = RARITY_CONFIG[recipe.rarity] || RARITY_CONFIG['common'];
-    
+
+    // 判断配方可见状态
+    // - 已发现：显示完整信息
+    // - 未发现但稀有度已解锁（达到门槛）：显示名称但条件模糊
+    // - 未发现且稀有度未解锁：显示为锁定（???）
+    const isVisible = discovered || rarityUnlocked;
+    const showDetails = discovered;
+
     const item = document.createElement('div');
     item.className = 'recipe-item';
     item.style.borderColor = rgbToCss(rCfg.color);
 
-    const condText = unlocked ? getRecipeHint(recipe.id) : '💡 条件未公开';
     const priority = recipe.priority || 0;
 
-    item.innerHTML = `
-      <div class="recipe-item-header">
-        <span class="recipe-item-name${unlocked ? '' : ' locked'}">${unlocked ? recipe.name : '???'}</span>
-        <span class="recipe-rarity" style="background: ${rgbToCss(rCfg.bgColor)}; border: 1px solid ${rgbToCss(rCfg.color)}">${rCfg.icon || ''} ${rCfg.name || '普通'}</span>
-      </div>
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span class="recipe-item-points${unlocked ? '' : ' locked'}">${unlocked ? recipe.points + ' 分' : '???'}</span>
-        <div class="recipe-ingredients"><span class="recipe-desc">优先级 ${priority}</span></div>
-      </div>
-      ${unlocked 
-        ? `<div class="recipe-desc">${recipe.description || ''}</div><div class="recipe-hint">${condText}</div>` 
-        : `<div class="recipe-hint">${condText}</div>`
-      }
-    `;
+    if (!isVisible) {
+      // 完全隐藏：稀有度未达到门槛
+      item.innerHTML = `
+        <div class="recipe-item-header">
+          <span class="recipe-item-name locked">🔒 ???</span>
+          <span class="recipe-rarity" style="background: ${rgbToCss(rCfg.bgColor)}; border: 1px solid ${rgbToCss(rCfg.color)}">${rCfg.icon || ''} ${rCfg.name || '普通'}</span>
+        </div>
+        <div class="recipe-hint">${getRecipeUnlockHint(recipe.id)}</div>
+      `;
+    } else if (!discovered) {
+      // 稀有度已解锁但尚未合成过
+      item.innerHTML = `
+        <div class="recipe-item-header">
+          <span class="recipe-item-name" style="color: #aaa;">${recipe.name}</span>
+          <span class="recipe-rarity" style="background: ${rgbToCss(rCfg.bgColor)}; border: 1px solid ${rgbToCss(rCfg.color)}">${rCfg.icon || ''} ${rCfg.name || '普通'}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="recipe-item-points">${recipe.points} 分</span>
+          <div class="recipe-ingredients"><span class="recipe-desc">优先级 ${priority}</span></div>
+        </div>
+        <div class="recipe-hint">${getRecipeHint(recipe.id)}</div>
+      `;
+    } else {
+      // 已发现：显示完整信息
+      item.innerHTML = `
+        <div class="recipe-item-header">
+          <span class="recipe-item-name">${recipe.name}</span>
+          <span class="recipe-rarity" style="background: ${rgbToCss(rCfg.bgColor)}; border: 1px solid ${rgbToCss(rCfg.color)}">${rCfg.icon || ''} ${rCfg.name || '普通'}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="recipe-item-points">${recipe.points} 分</span>
+          <div class="recipe-ingredients"><span class="recipe-desc">优先级 ${priority}</span></div>
+        </div>
+        <div class="recipe-desc">${recipe.description || ''}</div>
+        <div class="recipe-hint">${getRecipeHint(recipe.id)}</div>
+      `;
+    }
 
     container.appendChild(item);
   });

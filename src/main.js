@@ -230,6 +230,7 @@ scene('game', () => {
   // 更新分数显示
   onUpdate(() => {
     ui.updateScore(gameState.score);
+    ui.updateHighScore(gameState.highScore);
     ui.updateHealth(gameState.health);
   });
 });

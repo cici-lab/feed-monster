@@ -19,5 +19,8 @@ Thumbs.db
 # AI Agent context
 AGENTS.md
 
+# WorkBuddy
+.workbuddy/
+
 # Test screenshots
 *.jpg

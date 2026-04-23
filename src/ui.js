@@ -8,6 +8,7 @@ import { setMonsterType } from './monster.js';
 import { cursorState } from './cursorHealth.js';
 
 let scoreDisplay = null;
+let highScoreDisplay = null; // 最高分解显
 let hungerBar = null;
 let hungerFill = null;
 let healthBar = null;
@@ -44,6 +45,13 @@ export function createUI(state) {
     text('0', { size: 32, font: 'monospace' }),
     pos(0, 20),
     color(255, 255, 100),
+  ]);
+
+  // 最高分解显
+  highScoreDisplay = uiContainer.add([
+    text(`最高分: ${state.highScore}`, { size: 14 }),
+    pos(0, 58),
+    color(255, 215, 0),
   ]);
 
   // 饱食度容器
@@ -272,6 +280,13 @@ export function createUI(state) {
     }
   }
 
+  // 更新最高分解显
+  function updateHighScore(highScore) {
+    if (highScoreDisplay) {
+      highScoreDisplay.text = `最高分: ${highScore}`;
+    }
+  }
+
   function updateHunger(hunger) {
     if (hungerFill) {
       const barWidth = Math.max(0, hunger * 2);
@@ -335,6 +350,7 @@ export function createUI(state) {
   // 保存引用
   uiRefs = {
     updateScore,
+    updateHighScore,
     updateHunger,
     updateHealth,
     updateCombo,

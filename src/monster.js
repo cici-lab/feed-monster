@@ -696,8 +696,6 @@ export function createMonster(x, y, type = null) {
     let interactionTimer = 0;
     let interactionCooldown = 0;
     const INTERACTION_INTERVAL = 3; // 互动检查间隔
-    const CHASE_SPEED = 80;
-    const FLEE_SPEED = 100;
     const ATTACK_RANGE = 120;
     const HEAL_RANGE = 100;
     
@@ -781,17 +779,9 @@ export function createMonster(x, y, type = null) {
         const dy = currentTarget.y - monster.pos.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         
-        if (dist > 30 && dist > 0) {
-          monster.pos.x += (dx / dist) * CHASE_SPEED * dt();
-          monster.pos.y += (dy / dist) * CHASE_SPEED * dt();
-          
-          // 更新 baseY 以保持浮动
-          baseY = monster.pos.y;
-        }
-        
         // 接近时显示爱心（限制频率）
         heartTimer += dt();
-        if (dist < 60 && heartTimer > 0.3) {
+        if (dist < 150 && heartTimer > 0.3) {
           heartTimer = 0;
           createHeartParticle(monster.pos.x, monster.pos.y - 40);
         }
@@ -816,17 +806,7 @@ export function createMonster(x, y, type = null) {
           interactionState = 'idle';
           return;
         }
-        
-        const currentCursor = getCursorPos();
-        const dx = monster.pos.x - currentCursor.x;
-        const dy = monster.pos.y - currentCursor.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        
-        if (dist < 200 && dist > 0) {
-          monster.pos.x += (dx / dist) * FLEE_SPEED * dt();
-          monster.pos.y += (dy / dist) * FLEE_SPEED * dt();
-          baseY = monster.pos.y;
-        }
+        // 怪物保持原地，不移动
       });
     }
     

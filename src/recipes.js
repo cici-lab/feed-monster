@@ -36,6 +36,37 @@ export const RECIPES = {
     color: [170, 150, 120],
   },
 
+  // ========== 新增普通配方 ==========
+
+  mushroomStew: {
+    id: 'mushroomStew',
+    name: '蘑菇浓汤',
+    points: 38,
+    rarity: 'common',
+    priority: 3,
+    conditions: { nature: 2 },
+    description: '自然系食材慢炖，香气扑鼻',
+    category: 'dish',
+    effect: '恢复饱食度并少量加分',
+    color: [180, 120, 80],
+  },
+
+  abstractPaste: {
+    id: 'abstractPaste',
+    name: '抽象糊',
+    points: 42,
+    rarity: 'common',
+    priority: 4,
+    conditions: { abstract: 2 },
+    description: '概念与概念碰撞，混沌中诞生的美味',
+    category: 'dish',
+    effect: '恢复饱食度并中等加分',
+    color: [180, 100, 200],
+    glow: true,
+  },
+
+  // ========== 原有普通配方 ==========
+
   clearBroth: {
     id: 'clearBroth',
     name: '清汤',
@@ -88,6 +119,8 @@ export const RECIPES = {
     color: [120, 200, 190],
   },
 
+  // ========== 稀有配方（需最高分 800 解锁）==========
+
   heartyPlatter: {
     id: 'heartyPlatter',
     name: '大餐拼盘',
@@ -130,6 +163,8 @@ export const RECIPES = {
     glow: true,
   },
 
+  // ========== 传说配方（需最高分 2000 解锁）==========
+
   breakfastEgg: {
     id: 'breakfastEgg',
     name: '早餐蛋',
@@ -167,6 +202,13 @@ export const RARITY_CONFIG = {
   },
 };
 
+// 配方解锁门槛配置（按稀有度）
+export const RARITY_THRESHOLDS = {
+  legendary: 2000, // 传说配方需要最高分达到 2000
+  rare: 800,       // 稀有配方需要最高分达到 800
+  common: 0,       // 普通配方无需解锁
+};
+
 /**
  * 初始化配方系统
  */
@@ -177,6 +219,101 @@ export function initRecipeSystem() {
     const unlocked = JSON.parse(saved);
     recipeState.unlockedRecipes = new Set(unlocked);
   }
+}
+
+/**
+ * 检查配方是否达到解锁门槛（基于最高分）
+ * @param {string} recipeId - 配方ID
+ * @param {number} highScore - 当前最高分
+ * @returns {boolean} 是否满足解锁条件
+ */
+export function checkRecipeUnlockThreshold(recipeId) {
+  const recipe = RECIPES[recipeId];
+  if (!recipe) return false;
+
+  // 普通配方始终可用
+  if (recipe.rarity === 'common') return true;
+
+  // 从 localStorage 读取当前最高分（兼容 state.js 的 saveGame）
+  const saveData = localStorage.getItem('feed-monster-save');
+  let highScore = 0;
+  if (saveData) {
+    try {
+      const data = JSON.parse(saveData);
+      highScore = data.highScore || 0;
+    } catch (e) {
+      highScore = 0;
+    }
+  }
+
+  const threshold = RARITY_THRESHOLDS[recipe.rarity] || 0;
+  return highScore >= threshold;
+}
+
+/**
+ * 获取配方的解锁进度提示
+ * @param {string} recipeId - 配方ID
+ * @returns {string} 解锁条件描述
+ */
+export function getRecipeUnlockHint(recipeId) {
+  const recipe = RECIPES[recipeId];
+  if (!recipe) return '';
+
+  // 已解锁
+  if (isRecipeUnlocked(recipeId)) {
+    return getRecipeHint(recipeId);
+  }
+
+  // 未解锁且是高级配方
+  if (recipe.rarity === 'common') {
+    return '需要：任意 3 个食材';
+  }
+
+  // 从 localStorage 读取最高分
+  const saveData = localStorage.getItem('feed-monster-save');
+  let highScore = 0;
+  if (saveData) {
+    try {
+      const data = JSON.parse(saveData);
+      highScore = data.highScore || 0;
+    } catch (e) {
+      highScore = 0;
+    }
+  }
+
+  const threshold = RARITY_THRESHOLDS[recipe.rarity] || 0;
+
+  if (highScore >= threshold) {
+    // 达到门槛但尚未发现该配方（待合成解锁）
+    return `🎉 已达门槛！合成即可解锁`;
+  }
+
+  return `🔒 最高分达到 ${threshold} 解锁 | 当前: ${highScore}`;
+}
+
+/**
+ * 获取所有配方的解锁进度
+ * @returns {Object} 各稀有度的解锁状态
+ */
+export function getUnlockProgress() {
+  const saveData = localStorage.getItem('feed-monster-save');
+  let highScore = 0;
+  if (saveData) {
+    try {
+      const data = JSON.parse(saveData);
+      highScore = data.highScore || 0;
+    } catch (e) {
+      highScore = 0;
+    }
+  }
+
+  return {
+    highScore,
+    rareThreshold: RARITY_THRESHOLDS.rare,
+    legendaryThreshold: RARITY_THRESHOLDS.legendary,
+    rareProgress: Math.min(100, Math.floor((highScore / RARITY_THRESHOLDS.rare) * 100)),
+    legendaryProgress: Math.min(100, Math.floor((highScore / RARITY_THRESHOLDS.legendary) * 100)),
+  };
 }
 
 /**
@@ -210,6 +347,7 @@ function isMatchByConditions(conditions, dimensions) {
 
 /**
  * 检查配方是否匹配（维度阈值 + 优先级）
+ * 只返回已满足解锁门槛的配方
  */
 export function checkRecipe(foodTypeKeys) {
   if (!Array.isArray(foodTypeKeys) || foodTypeKeys.length === 0) {
@@ -217,7 +355,13 @@ export function checkRecipe(foodTypeKeys) {
   }
 
   const dimensions = calculateDimensions(foodTypeKeys);
-  const candidates = getAllRecipes().filter(recipe => isMatchByConditions(recipe.conditions, dimensions));
+  const candidates = getAllRecipes().filter(recipe => {
+    // 必须满足维度条件
+    if (!isMatchByConditions(recipe.conditions, dimensions)) return false;
+    // 必须达到解锁门槛
+    if (!checkRecipeUnlockThreshold(recipe.id)) return false;
+    return true;
+  });
 
   if (candidates.length === 0) {
     return null;
@@ -259,9 +403,14 @@ export function getAllRecipes() {
 }
 
 /**
- * 获取配方提示
+ * 获取配方提示（已解锁配方显示合成条件，未解锁配方显示解锁条件）
  */
 export function getRecipeHint(recipeId) {
+  // 未解锁时返回解锁条件
+  if (!isRecipeUnlocked(recipeId)) {
+    return getRecipeUnlockHint(recipeId);
+  }
+
   const recipe = RECIPES[recipeId];
   if (!recipe) return '';
   const conditions = recipe.conditions || {};

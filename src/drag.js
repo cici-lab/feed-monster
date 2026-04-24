@@ -64,12 +64,20 @@ function getInteractiveFoods() {
   return [...baseFoods, ...dishFoods];
 }
 
-// 检查是否点击了全屏按钮区域
+// 检查是否点击了右上角按钮栏区域（全屏、桌宠、退出）
+// 三个按钮都在右上角同一行，用一个统一区域检测即可
+function isClickOnTopRightBtns(mouse) {
+  const BTN_Y = 20;
+  const BTN_H = 36;
+  // 覆盖从全屏按钮左边缘到退出按钮右边缘
+  const rightEdge = width() - 16;
+  const leftEdge = width() - 300; // 足够宽覆盖三个按钮
+  return mouse.x >= leftEdge && mouse.x <= rightEdge && mouse.y >= BTN_Y && mouse.y <= BTN_Y + BTN_H;
+}
+
+// 检查是否点击了全屏按钮区域（保留兼容）
 function isClickOnFullscreenBtn(mouse) {
-  // 始终使用当前窗口尺寸计算按钮位置
-  const btnX = width() - 120;
-  const btnY = 20;
-  return mouse.x >= btnX && mouse.x <= btnX + 100 && mouse.y >= btnY && mouse.y <= btnY + 36;
+  return isClickOnTopRightBtns(mouse);
 }
 
 // 检查是否点击了图鉴按钮区域
@@ -140,12 +148,15 @@ export function initDragSystem(monster, state) {
   onMousePress('left', () => {
     const mouse = mousePos();
 
-    // 先检查是否点击了UI按钮区域（全屏、图鉴、配方）
-    if (isClickOnAnyUIButton(mouse)) {
-      if (isClickOnFullscreenBtn(mouse)) {
-        handleFullscreenClick();
-      }
+    // 先检查是否点击了右上角按钮栏区域（全屏、桌宠、退出）
+    // 不调用 handleFullscreenClick，让 Kaplay 的 onClick 处理按钮点击
+    if (isClickOnTopRightBtns(mouse)) {
       return; // 不处理食物拖拽，让按钮的 onClick 处理
+    }
+
+    // 检查是否点击了其他UI按钮区域（图鉴、配方）
+    if (isClickOnEncyclopediaBtn(mouse) || isClickOnRecipeBtn(mouse)) {
+      return;
     }
 
     // 检查是否点击了合成炉（用于触发合成）
@@ -190,17 +201,6 @@ export function initDragSystem(monster, state) {
     
     // 更新食材悬停提示
     updateFoodTooltip();
-    
-    // 全屏按钮悬停效果
-    const uiRefs = getUIRefs();
-    if (uiRefs && uiRefs.fullscreenBtnBg) {
-      const m = mousePos();
-      if (isClickOnFullscreenBtn(m)) {
-        uiRefs.fullscreenBtnBg.color = rgb(80, 80, 120);
-      } else {
-        uiRefs.fullscreenBtnBg.color = rgb(60, 60, 90);
-      }
-    }
   });
 
   // 注册控制台函数
@@ -1367,6 +1367,26 @@ function createCraftedDish(recipe) {
 // 当前悬停的食物
 let hoveredFood = null;
 
+// 将 Kaplay 逻辑坐标转换为 CSS 屏幕坐标
+// stretch 模式下逻辑分辨率 (1200×800) 和实际窗口像素不一致
+// toScreen() 会处理相机变换和 stretch 缩放
+function logicToScreen(logicX, logicY) {
+  const screenPos = toScreen(vec2(logicX, logicY));
+  return { x: screenPos.x, y: screenPos.y };
+}
+
+// 获取逻辑单位到屏幕像素的缩放比
+// 用 canvas 实际渲染尺寸 / 逻辑分辨率 来计算
+function getLogicToScreenScale() {
+  const canvas = document.getElementById('game-container');
+  if (!canvas) return { sx: 1, sy: 1 };
+  // canvas 的 CSS 像素尺寸 / Kaplay 逻辑分辨率
+  return {
+    sx: canvas.clientWidth / width(),
+    sy: canvas.clientHeight / height(),
+  };
+}
+
 // 更新食材悬停提示
 function updateFoodTooltip() {
   const tooltip = document.getElementById('food-tooltip');
@@ -1382,8 +1402,14 @@ function updateFoodTooltip() {
     const foodSize = draggedFood.foodType.size || 20;
     const actualSize = Array.isArray(foodSize) ? Math.max(foodSize[0], foodSize[1]) : foodSize;
     
-    tooltip.style.left = draggedFood.pos.x + 'px';
-    tooltip.style.top = (draggedFood.pos.y - actualSize - 25) + 'px';
+    // 用 toScreen 将逻辑坐标转为屏幕坐标
+    const screen = logicToScreen(draggedFood.pos.x, draggedFood.pos.y);
+    // 逻辑尺寸转屏幕像素尺寸
+    const scale = getLogicToScreenScale();
+    const screenSize = actualSize * Math.min(scale.sx, scale.sy);
+    
+    tooltip.style.left = screen.x + 'px';
+    tooltip.style.top = (screen.y - screenSize - 10) + 'px';
     tooltip.style.transform = 'translate(-50%, 0)';
     tooltip.classList.add('visible', 'dragging');
     hoveredFood = draggedFood;
@@ -1414,8 +1440,14 @@ function updateFoodTooltip() {
     const foodSize = foundFood.foodType.size || 20;
     const actualSize = Array.isArray(foodSize) ? Math.max(foodSize[0], foodSize[1]) : foodSize;
     
-    tooltip.style.left = foundFood.pos.x + 'px';
-    tooltip.style.top = (foundFood.pos.y - actualSize - 25) + 'px';
+    // 用 toScreen 将逻辑坐标转为屏幕坐标
+    const screen = logicToScreen(foundFood.pos.x, foundFood.pos.y);
+    // 逻辑尺寸转屏幕像素尺寸
+    const scale = getLogicToScreenScale();
+    const screenSize = actualSize * Math.min(scale.sx, scale.sy);
+    
+    tooltip.style.left = screen.x + 'px';
+    tooltip.style.top = (screen.y - screenSize - 10) + 'px';
     tooltip.style.transform = 'translate(-50%, 0)';
     tooltip.classList.add('visible');
     hoveredFood = foundFood;

@@ -157,34 +157,135 @@ export function createUI(state) {
     });
   });
 
-  // 全屏按钮背景
+  // ========== 右上角按钮栏：全屏 | 桌宠模式 | 退出 ==========
+  const BTN_H = 36;
+  const BTN_GAP = 10;
+  const BTN_Y = 20;
+  const FULLSCREEN_W = 90;
+  const PET_W = 110;
+  const EXIT_W = 80;
+
+  function getBtnXpositions() {
+    const exitX = width() - EXIT_W - 16;
+    const petX = exitX - PET_W - BTN_GAP;
+    const fullX = petX - FULLSCREEN_W - BTN_GAP;
+    return { fullX, petX, exitX };
+  }
+
+  // 全屏按钮
   const fullscreenBtnBg = add([
-    rect(100, 36),
-    pos(width() - 120, 20),
+    rect(FULLSCREEN_W, BTN_H, { radius: 8 }),
+    pos(getBtnXpositions().fullX, BTN_Y),
     anchor('topleft'),
-    color(60, 60, 90),
-    outline(2, rgb(100, 100, 140)),
+    color(50, 50, 80),
+    opacity(0.9),
     z(30),
     fixed(),
+    area(),
   ]);
-  
-  // 每帧更新按钮位置
+
+  const fullscreenText = fullscreenBtnBg.add([
+    text('⛶ 全屏', { size: 14 }),
+    pos(FULLSCREEN_W / 2, BTN_H / 2),
+    anchor('center'),
+    color(200, 200, 220),
+  ]);
+
+  fullscreenBtnBg.onHover(() => { fullscreenBtnBg.color = rgb(70, 70, 110); });
+  fullscreenBtnBg.onHoverEnd(() => { fullscreenBtnBg.color = rgb(50, 50, 80); });
+
+  // 全屏按钮点击
+  fullscreenBtnBg.onClick(async () => {
+    let isFull;
+    if (window.electronAPI) {
+      isFull = await window.electronAPI.toggleFullscreen();
+    } else {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+        isFull = false;
+      } else {
+        document.documentElement.requestFullscreen();
+        isFull = true;
+      }
+    }
+    if (fullscreenText) {
+      fullscreenText.text = isFull ? '⛶ 退出全屏' : '⛶ 全屏';
+    }
+  });
+
+  // 桌宠模式按钮（仅 Electron 环境下显示）
+  let petBtnBg = null;
+  if (window.electronAPI) {
+    petBtnBg = add([
+      rect(PET_W, BTN_H, { radius: 8 }),
+      pos(getBtnXpositions().petX, BTN_Y),
+      anchor('topleft'),
+      color(60, 60, 90),
+      opacity(0.9),
+      z(30),
+      fixed(),
+      area(),
+    ]);
+
+    petBtnBg.add([
+      text('🐾 桌宠模式', { size: 14 }),
+      pos(PET_W / 2, BTN_H / 2),
+      anchor('center'),
+      color(200, 200, 255),
+    ]);
+
+    petBtnBg.onClick(() => {
+      window.electronAPI.switchToPet();
+    });
+
+    petBtnBg.onHover(() => { petBtnBg.color = rgb(80, 80, 130); });
+    petBtnBg.onHoverEnd(() => { petBtnBg.color = rgb(60, 60, 90); });
+  }
+
+  // 退出按钮
+  const exitBtnBg = add([
+    rect(EXIT_W, BTN_H, { radius: 8 }),
+    pos(getBtnXpositions().exitX, BTN_Y),
+    anchor('topleft'),
+    color(80, 50, 50),
+    opacity(0.9),
+    z(30),
+    fixed(),
+    area(),
+  ]);
+
+  exitBtnBg.add([
+    text('✕ 退出', { size: 14 }),
+    pos(EXIT_W / 2, BTN_H / 2),
+    anchor('center'),
+    color(255, 200, 200),
+  ]);
+
+  exitBtnBg.onClick(() => {
+    if (window.electronAPI) {
+      window.close();
+    }
+  });
+
+  exitBtnBg.onHover(() => { exitBtnBg.color = rgb(110, 70, 70); });
+  exitBtnBg.onHoverEnd(() => { exitBtnBg.color = rgb(80, 50, 50); });
+
+  // 每帧更新按钮位置（窗口 resize 跟随）
   onUpdate(() => {
+    const { fullX, petX, exitX } = getBtnXpositions();
     if (fullscreenBtnBg && fullscreenBtnBg.exists()) {
-      fullscreenBtnBg.pos.x = width() - 120;
+      fullscreenBtnBg.pos.x = fullX;
+    }
+    if (petBtnBg && petBtnBg.exists()) {
+      petBtnBg.pos.x = petX;
+    }
+    if (exitBtnBg && exitBtnBg.exists()) {
+      exitBtnBg.pos.x = exitX;
     }
     if (backBtnBg && backBtnBg.exists()) {
       backBtnBg.pos.y = height() - 56;
     }
   });
-  
-  // 全屏按钮文字
-  const fullscreenText = fullscreenBtnBg.add([
-    text('全屏', { size: 16 }),
-    pos(50, 18),
-    anchor('center'),
-    color(200, 200, 220),
-  ]);
 
   // ========== 鼠标血量 UI ==========
   
@@ -340,11 +441,12 @@ export function createUI(state) {
     }
   }
 
-  // 更新全屏按钮位置（窗口大小变化时调用）
+  // 更新按钮栏位置（窗口大小变化时调用）
   function updateFullscreenBtnPos() {
-    if (fullscreenBtnBg) {
-      fullscreenBtnBg.pos.x = width() - 120;
-    }
+    const { fullX, petX, exitX } = getBtnXpositions();
+    if (fullscreenBtnBg) fullscreenBtnBg.pos.x = fullX;
+    if (petBtnBg) petBtnBg.pos.x = petX;
+    if (exitBtnBg) exitBtnBg.pos.x = exitX;
   }
 
   // 保存引用

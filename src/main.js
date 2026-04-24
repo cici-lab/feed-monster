@@ -12,14 +12,20 @@ import { initConsoleControls, registerCraftTrigger, registerFullscreenToggle } f
 import { initMonsterSelectSystem, showMonsterSelect, hideMonsterSelect } from './monsterSelect.js';
 import { initCursorHealth, cleanupCursorHealth, resetCursorHealth, cursorState } from './cursorHealth.js';
 import { createBuffBar, updateBuffs, updateBuffBarDisplay, getFoodSpawnIntervalMultiplier, getHungerDrainMultiplier, shouldHealthDrain, clearAllBuffs } from './buffs.js';
+// petMode 使用动态 import，避免其错误阻断主游戏模块链加载
 
 // 初始化 Kaplay 游戏引擎
+// 桌宠模式（URL 含 ?mode=pet）时背景设为透明（alpha=0）以实现透明窗口
+// 注意：不能设为 null！Kaplay 内部逻辑：bgColor 为 null 时会画灰白棋盘格纹理
+// 设为 [0,0,0,0] 则 bgColor 存在但透明，不画棋盘格，canvas 透明
+const isPetModeInit = new URLSearchParams(window.location.search).get('mode') === 'pet';
+
 kaplay({
   canvas: document.getElementById('game-container'),
   width: 1200,
   height: 800,
-  background: [26, 26, 46],
-  debug: true,
+  background: isPetModeInit ? [0, 0, 0, 0] : [26, 26, 46],
+  debug: isPetModeInit ? false : true,  // 桌宠模式关闭 debug
   global: true, // 启用全局函数
   stretch: true, // 自适应屏幕
   letterbox: false, // 不留黑边
@@ -261,6 +267,18 @@ scene('game', () => {
     ui.updateHealth(gameState.health);
   });
 });
+
+// ── 桌宠模式：动态 import，确保 petMode 任何错误不影响主游戏 ──
+import('./petMode.js')
+  .then(({ initPetMode, registerPetScene }) => {
+    // 先注册桌宠专用场景（必须在 go('title') 前）
+    registerPetScene();
+    // 再初始化 IPC 监听等
+    initPetMode();
+  })
+  .catch((err) => {
+    console.warn('[petMode] 桌宠模式初始化失败（不影响主游戏）:', err);
+  });
 
 // 启动游戏 - 从标题画面开始
 go('title');

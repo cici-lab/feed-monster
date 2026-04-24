@@ -15,6 +15,15 @@
       background: #1a1a2e;
       font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
     }
+    /* 桌宠模式下所有背景透明 */
+    html.pet-mode,
+    body.pet-mode {
+      background: transparent !important;
+    }
+    body.pet-mode #game-container,
+    body.pet-mode canvas {
+      background: transparent !important;
+    }
     #game-container {
       width: 100vw;
       height: 100vh;

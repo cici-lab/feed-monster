@@ -11,6 +11,7 @@ import { initRecipePanelSystem } from './recipePanel.js';
 import { initConsoleControls, registerCraftTrigger, registerFullscreenToggle } from './console.js';
 import { initMonsterSelectSystem, showMonsterSelect, hideMonsterSelect } from './monsterSelect.js';
 import { initCursorHealth, cleanupCursorHealth, resetCursorHealth, cursorState } from './cursorHealth.js';
+import { createBuffBar, updateBuffs, updateBuffBarDisplay, getFoodSpawnIntervalMultiplier, getHungerDrainMultiplier, shouldHealthDrain, clearAllBuffs } from './buffs.js';
 
 // 初始化 Kaplay 游戏引擎
 kaplay({
@@ -137,6 +138,9 @@ scene('game', () => {
   
   // 重置鼠标血量
   resetCursorHealth();
+
+  // 重置 buff 系统
+  clearAllBuffs();
   
   // 初始化鼠标光环系统
   const cursorHealth = initCursorHealth();
@@ -171,6 +175,9 @@ scene('game', () => {
   // 创建UI
   const ui = createUI(gameState);
 
+  // 创建 buff 栏
+  createBuffBar();
+
   // 初始化图鉴系统
   initEncyclopediaSystem();
 
@@ -197,38 +204,58 @@ scene('game', () => {
     }
   });
 
-  // 定时生成食物
-  loop(2, () => {
-    if (foodManager.getFoodCount() < 8) {
-      createFood();
-    }
-  });
+  // 定时生成食物（buff 影响间隔）
+  let foodSpawnTimer = 0;
+  const baseFoodSpawnInterval = 2; // 基础间隔2秒
 
-  // 饱食度随时间减少
-  loop(1, () => {
-    gameState.hunger = Math.max(0, gameState.hunger - 0.5);
-    ui.updateHunger(gameState.hunger);
-    
-    // 饱食度过低，怪物变伤心，并减少生命值
-    if (gameState.hunger < 20) {
-      monster.setSad();
-      // 饱食度过低时减少生命值
-      gameState.health = Math.max(0, gameState.health - 1);
-      ui.updateHealth(gameState.health);
-      
-      // 检查游戏结束
-      if (checkGameOver()) {
-        go('gameover');
-      }
-    } else if (gameState.hunger > 80) {
-      monster.setHappy();
-    } else {
-      monster.setIdle();
-    }
-  });
+  // 饱食度随时间减少（buff 影响下降速率）
+  let hungerDrainTimer = 0;
 
-  // 更新分数显示
+  // 主循环更新 buff、食物生成、饱食度
   onUpdate(() => {
+    // 更新 buff 系统
+    updateBuffs(dt());
+    updateBuffBarDisplay();
+
+    // 食物生成（受 buff 影响）
+    foodSpawnTimer += dt();
+    const spawnInterval = baseFoodSpawnInterval * getFoodSpawnIntervalMultiplier();
+    if (foodSpawnTimer >= spawnInterval) {
+      foodSpawnTimer = 0;
+      if (foodManager.getFoodCount() < 8) {
+        createFood();
+      }
+    }
+
+    // 饱食度随时间减少（受 buff 影响）
+    hungerDrainTimer += dt();
+    if (hungerDrainTimer >= 1) {
+      hungerDrainTimer = 0;
+      const drainMultiplier = getHungerDrainMultiplier();
+      gameState.hunger = Math.max(0, gameState.hunger - 0.5 * drainMultiplier);
+      ui.updateHunger(gameState.hunger);
+      
+      // 饱食度过低，怪物变伤心，并减少生命值
+      if (gameState.hunger < 20) {
+        monster.setSad();
+        // 生命值下降（受 buff 影响是否免疫）
+        if (shouldHealthDrain()) {
+          gameState.health = Math.max(0, gameState.health - 1);
+          ui.updateHealth(gameState.health);
+        }
+        
+        // 检查游戏结束
+        if (checkGameOver()) {
+          go('gameover');
+        }
+      } else if (gameState.hunger > 80) {
+        monster.setHappy();
+      } else {
+        monster.setIdle();
+      }
+    }
+
+    // 更新分数显示
     ui.updateScore(gameState.score);
     ui.updateHighScore(gameState.highScore);
     ui.updateHealth(gameState.health);

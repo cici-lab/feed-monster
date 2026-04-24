@@ -9,6 +9,7 @@ import { gameState, triggerFeedFeedback } from './state.js';
 import { getUIRefs } from './ui.js';
 import { isFoodInForge, addFoodToForge, canCraft, craft, isClickOnForge, getForgeElement } from './forge.js';
 import { checkRecipe, unlockRecipe, RARITY_CONFIG } from './recipes.js';
+import { applyBuff, getScoreMultiplier, shouldIgnoreHate, getCategoryBonus, BUFF_TYPES } from './buffs.js';
 import { registerCraftTrigger, registerFullscreenToggle } from './console.js';
 
 let isDragging = false;
@@ -397,11 +398,15 @@ function feedMonster(food) {
   
   // 检测食物是否被当前怪物厌恶
   const isHated = isFoodHated(typeKey, foodType);
-  
+
+  // Buff：忽略厌恶
+  const hateIgnored = shouldIgnoreHate() && isHated;
+  const effectiveHated = hateIgnored ? false : isHated;
+
   // 计算投掷力度加成
   const speed = Math.sqrt(throwVelocity.x ** 2 + throwVelocity.y ** 2);
   const speedBonus = Math.min(2, 1 + speed / 500); // 最高2倍加成
-  
+
   // 计算连击加成
   const now = time();
   if (now - gameState.lastFeedTime < 2) {
@@ -410,12 +415,14 @@ function feedMonster(food) {
     gameState.combo = 1;
   }
   gameState.lastFeedTime = now;
-  
-  // 计算基础得分
-  let points = Math.floor(foodType.points * speedBonus * (1 + gameState.combo * 0.1));
+
+  // 计算基础得分（加入 buff 加成）
+  const buffMultiplier = getScoreMultiplier();
+  const categoryBonus = getCategoryBonus(foodType.category);
+  let points = Math.floor(foodType.points * speedBonus * (1 + gameState.combo * 0.1) * buffMultiplier * categoryBonus);
   
   // 处理厌恶食物
-  if (isHated) {
+  if (effectiveHated) {
     disgustCount++;
     
     // 分数减半
@@ -457,6 +464,11 @@ function feedMonster(food) {
       monster.setEating();
     }
     
+    // 如果是厌恶食物但被 buff 忽略了，显示特殊提示
+    if (isHated && hateIgnored) {
+      showReaction(monster, 'ignoreHate');
+    }
+    
     // 根据食物类型显示不同反应和光环反馈
     if (foodType.reaction === 'love' || foodType.reaction === 'happy') {
       // 喜爱的食物 - 触发光环爱心效果
@@ -475,18 +487,18 @@ function feedMonster(food) {
   // 增加分数
   gameState.score += points;
   
-  // 增加饱食度（厌恶食物恢复较少）
-  const hungerGain = isHated ? foodType.points / 4 : foodType.points / 2;
+  // 增加饱食度（厌恶食物恢复较少，但被buff忽略的按普通计算）
+  const hungerGain = effectiveHated ? foodType.points / 4 : foodType.points / 2;
   gameState.hunger = Math.min(100, gameState.hunger + hungerGain);
   
-  // 怪物成长（厌恶食物成长较少）
+  // 怪物成长（厌恶食物成长较少，但被buff忽略的按普通计算）
   if (monster && monster.grow) {
-    const growthAmount = isHated ? foodType.points / 200 : foodType.points / 100;
+    const growthAmount = effectiveHated ? foodType.points / 200 : foodType.points / 100;
     monster.grow(growthAmount);
   }
   
   // 显示得分特效
-  showScorePopup(food.pos.x, food.pos.y, points, speedBonus, isHated);
+  showScorePopup(food.pos.x, food.pos.y, points, speedBonus, effectiveHated);
   
   // 吃掉特效
   createEatEffect(food.pos.x, food.pos.y, foodType.color || [255, 255, 255]);
@@ -745,6 +757,7 @@ function showReaction(monster, reaction) {
     love: '(♥‿♥)',
     nerd: '(⌐■_■)',
     reject: '(╬▔皿▔)',
+    ignoreHate: '(🌀˘‿˘)',
   };
   
   const emoji = reactions[reaction] || '(◠‿◠)';
@@ -763,6 +776,24 @@ function showReaction(monster, reaction) {
       }
     },
   ]);
+
+  // Buff 忽略厌恶时额外提示
+  if (reaction === 'ignoreHate') {
+    add([
+      text('厌恶被抵消!', { size: 14 }),
+      pos(monster.pos.x, monster.pos.y - 130),
+      anchor('center'),
+      color(170, 120, 255),
+      opacity(1),
+      lifespan(1),
+      z(20),
+      {
+        update() {
+          this.pos.y -= 25 * dt();
+        }
+      },
+    ]);
+  }
 }
 
 function showScorePopup(x, y, points, multiplier, isHated = false) {
@@ -1053,6 +1084,14 @@ function triggerCraft() {
     const isNewUnlock = unlockRecipe(recipe.id);
     showCraftSuccessEffect(recipe, isNewUnlock);
     createCraftedDish(recipe);
+
+    // 应用 buff 效果
+    if (recipe.buff) {
+      const buffDef = BUFF_TYPES[recipe.buff.type];
+      if (buffDef) {
+        applyBuff(recipe.buff.type, recipe.buff.duration, recipe.buff.params || {});
+      }
+    }
   }
 }
 

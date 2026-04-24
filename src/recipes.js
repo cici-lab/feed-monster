@@ -34,6 +34,7 @@ export const RECIPES = {
     category: 'dish',
     effect: '小幅恢复饱食度',
     color: [170, 150, 120],
+    buff: { type: 'hungerFreeze', duration: 6 },
   },
 
   // ========== 新增普通配方 ==========
@@ -49,6 +50,7 @@ export const RECIPES = {
     category: 'dish',
     effect: '恢复饱食度并少量加分',
     color: [180, 120, 80],
+    buff: { type: 'categoryBonus', duration: 10, params: { category: 'nature', multiplier: 2 } },
   },
 
   abstractPaste: {
@@ -63,6 +65,7 @@ export const RECIPES = {
     effect: '恢复饱食度并中等加分',
     color: [180, 100, 200],
     glow: true,
+    buff: { type: 'categoryBonus', duration: 10, params: { category: 'abstract', multiplier: 2 } },
   },
 
   // ========== 原有普通配方 ==========
@@ -78,6 +81,7 @@ export const RECIPES = {
     category: 'dish',
     effect: '恢复饱食度',
     color: [130, 170, 230],
+    buff: { type: 'healthFreeze', duration: 8 },
   },
 
   weirdPaste: {
@@ -91,6 +95,7 @@ export const RECIPES = {
     category: 'dish',
     effect: '中等恢复饱食度',
     color: [150, 140, 170],
+    buff: { type: 'categoryBonus', duration: 10, params: { category: 'weird', multiplier: 2 } },
   },
 
   wildSalad: {
@@ -104,6 +109,7 @@ export const RECIPES = {
     category: 'dish',
     effect: '恢复饱食度并少量加分',
     color: [100, 190, 120],
+    buff: { type: 'foodSpawnRate', duration: 12 },
   },
 
   elementSoup: {
@@ -117,6 +123,7 @@ export const RECIPES = {
     category: 'dish',
     effect: '较高恢复饱食度',
     color: [120, 200, 190],
+    buff: { type: 'hungerDrainHalf', duration: 10 },
   },
 
   // ========== 稀有配方（需最高分 800 解锁）==========
@@ -133,6 +140,7 @@ export const RECIPES = {
     effect: '高额饱食恢复',
     color: [240, 180, 120],
     glow: true,
+    buff: { type: 'scoreMultiplier', duration: 12 },
   },
 
   voidPudding: {
@@ -147,6 +155,7 @@ export const RECIPES = {
     effect: '恢复饱食度并额外加分',
     color: [170, 120, 255],
     glow: true,
+    buff: { type: 'ignoreHate', duration: 12 },
   },
 
   cursedRoast: {
@@ -161,6 +170,7 @@ export const RECIPES = {
     effect: '高分奖励',
     color: [220, 120, 170],
     glow: true,
+    buff: { type: 'cursedBoost', duration: 12 },
   },
 
   // ========== 传说配方（需最高分 2000 解锁）==========
@@ -177,6 +187,7 @@ export const RECIPES = {
     effect: '大幅恢复饱食度并加分',
     color: [255, 225, 130],
     glow: true,
+    buff: { type: 'megaBoost', duration: 15 },
   },
 };
 
@@ -415,12 +426,35 @@ export function getRecipeHint(recipeId) {
   if (!recipe) return '';
   const conditions = recipe.conditions || {};
   const entries = Object.entries(conditions);
+  
+  let hint = '';
   if (entries.length === 0) {
-    return '需要：任意 3 个食材';
+    hint = '需要：任意 3 个食材';
+  } else {
+    const condHints = entries.map(([dim, count]) => `${DIMENSION_LABELS[dim] || dim}≥${count}`);
+    hint = `需要：${condHints.join(' + ')}`;
   }
 
-  const hints = entries.map(([dim, count]) => `${DIMENSION_LABELS[dim] || dim}≥${count}`);
-  return `需要：${hints.join(' + ')}`;
+  // 添加 buff 提示
+  if (recipe.buff) {
+    const buffNames = {
+      hungerFreeze: '饱食度暂停下降',
+      hungerDrainHalf: '饱食度下降减半',
+      healthFreeze: '生命值暂停下降',
+      scoreMultiplier: '所有得分翻倍',
+      foodSpawnRate: '食物生成翻倍',
+      ignoreHate: '厌恶食物视为普通',
+      categoryBonus: '特定类别加成',
+      cursedBoost: '得分×2.5/饱食加速',
+      megaBoost: '全面增益',
+    };
+    const buffDesc = buffNames[recipe.buff.type] || '';
+    if (buffDesc) {
+      hint += ` | ${recipe.buff.duration}s: ${buffDesc}`;
+    }
+  }
+
+  return hint;
 }
 
 /**

@@ -704,8 +704,12 @@ export function createMonster(x, y, type = null) {
     
     // 更新互动 AI
     function updateInteractionAI() {
-      if (currentState !== 'idle') return; // 只在空闲状态下互动
-      
+      // 桌宠模式下禁用互动 AI，避免干扰桌宠交互
+      if (gameState.isPetMode) return;
+
+      // 只在 idle 和 eating 状态下运行 AI（降低优先级）
+      if (currentState !== 'idle' && currentState !== 'eating') return;
+
       interactionTimer += dt();
       interactionCooldown -= dt();
       
@@ -899,34 +903,38 @@ export function createMonster(x, y, type = null) {
     // 更新发射物
     function updateProjectiles() {
       const cursorPos = getCursorPos();
-      
+
       for (let i = projectiles.length - 1; i >= 0; i--) {
         const p = projectiles[i];
-        
+
         // 安全检查
         if (!p || !p.obj) {
           projectiles.splice(i, 1);
           continue;
         }
-        
+
         p.life -= dt();
-        
+
         if (p.life <= 0 || !p.obj.exists()) {
           if (p.obj.exists()) p.obj.destroy();
           projectiles.splice(i, 1);
           continue;
         }
-        
+
         // 移动
         p.obj.pos.x += p.vx * dt();
         p.obj.pos.y += p.vy * dt();
-        
-        // 检测与鼠标碰撞
+
+        // 检测与鼠标碰撞 - 使用预测碰撞提高精度
+        const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+        const predictDist = speed * dt(); // 预测下一帧移动距离
+        const collisionRadius = 8 + 30 + predictDist; // 弹幕半径8 + 光标半径30 + 预测距离
+
         const dx = cursorPos.x - p.obj.pos.x;
         const dy = cursorPos.y - p.obj.pos.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        
-        if (dist < 30) {
+
+        if (dist < collisionRadius) {
           if (p.damage) {
             takeDamage(p.damage, 'monster-attack');
             createHitEffect(cursorPos.x, cursorPos.y, [255, 100, 100]);
@@ -934,12 +942,12 @@ export function createMonster(x, y, type = null) {
             heal(p.heal, 'monster-heal');
             createHitEffect(cursorPos.x, cursorPos.y, [100, 255, 150]);
           }
-          
+
           if (p.obj.exists()) p.obj.destroy();
           projectiles.splice(i, 1);
           continue;
         }
-        
+
         // 淡出
         if (p.life < 0.5) {
           p.obj.opacity = p.life * 2;

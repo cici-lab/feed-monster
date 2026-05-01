@@ -391,6 +391,11 @@ ipcMain.handle('switch-to-game', () => {
 // 获取当前模式
 ipcMain.handle('get-mode', () => currentMode);
 
+// 关闭窗口
+ipcMain.handle('close-window', () => {
+  app.exit(0);
+});
+
 // 获取屏幕尺寸
 ipcMain.handle('get-screen-size', () => {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;

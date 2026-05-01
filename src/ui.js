@@ -261,7 +261,10 @@ export function createUI(state) {
   ]);
 
   exitBtnBg.onClick(() => {
-    if (window.electronAPI) {
+    if (window.electronAPI && window.electronAPI.closeWindow) {
+      window.electronAPI.closeWindow();
+    } else {
+      // 非 Electron 环境下的备用方案
       window.close();
     }
   });

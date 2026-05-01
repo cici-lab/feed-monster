@@ -5,6 +5,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   toggleFullscreen: () => ipcRenderer.invoke('toggle-fullscreen'),
   isFullscreen: () => ipcRenderer.invoke('is-fullscreen'),
 
+  // ── 窗口操作 ─────────────────────────────────
+  closeWindow: () => ipcRenderer.invoke('close-window'),
+
   // ── 模式切换 ──────────────────────────────────
   switchToPet: () => ipcRenderer.invoke('switch-to-pet'),
   switchToGame: () => ipcRenderer.invoke('switch-to-game'),

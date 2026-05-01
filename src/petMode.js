@@ -91,6 +91,7 @@ export function initPetMode() {
 // ──────────────────────────────────────────────────
 export function enterPetMode() {
   isPetMode = true;
+  gameState.isPetMode = true; // 通知其他模块当前处于桌宠模式
 
   // 给 body 和 html 添加 pet-mode class（触发 CSS 透明背景）
   document.body.classList.add('pet-mode');
@@ -114,6 +115,7 @@ export function enterPetMode() {
 
 export function exitPetMode() {
   isPetMode = false;
+  gameState.isPetMode = false; // 恢复游戏模式
   // 移除 pet-mode class
   document.body.classList.remove('pet-mode');
   document.documentElement.classList.remove('pet-mode');
@@ -754,7 +756,7 @@ function showPetContextMenu(x, y) {
     { label: '📷 截图投喂', action: () => triggerScreenshot() },
     { label: '🎮 返回游戏', action: () => window.electronAPI?.switchToGame() },
     { separator: true },
-    { label: '❌ 退出', action: () => window.close() },
+    { label: '❌ 退出', action: () => window.electronAPI?.closeWindow() },
   ];
 
   items.forEach(item => {

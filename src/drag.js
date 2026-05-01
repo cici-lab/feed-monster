@@ -265,7 +265,8 @@ function updateDrag() {
   
   lastMousePos = { x: mouse.x, y: mouse.y };
   
-  // 检查是否与怪物碰撞
+  // 检查是否与怪物碰撞（桌宠模式下跳过，避免游戏场景碰撞检测干扰桌宠怪兽）
+  if (gameState.isPetMode) return;
   const monster = getMonster();
   if (monster && checkCollision(draggedFood, monster)) {
     feedMonster(draggedFood);
@@ -368,6 +369,9 @@ function checkCollision(food, monster) {
 }
 
 function feedMonster(food) {
+  // 桌宠模式下跳过，避免游戏场景干扰桌宠怪兽
+  if (gameState.isPetMode) return;
+
   // 先重置拖拽状态，防止异常导致卡死
   isDragging = false;
   draggedFood = null;

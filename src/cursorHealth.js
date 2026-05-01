@@ -375,6 +375,7 @@ function updateHealthRecovery() {
   // 检查是否触发虚弱状态
   if (cursorState.health <= 0 && !cursorState.isWeak) {
     enterWeakState();
+    return; // 避免与 takeDamage 重复触发
   }
 }
 
@@ -621,6 +622,7 @@ export function takeDamage(amount, source = 'unknown') {
   
   if (cursorState.health <= 0) {
     enterWeakState();
+    return; // 避免与 updateHealthRecovery 重复触发
   }
 }
 

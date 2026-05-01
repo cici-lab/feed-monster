@@ -19,6 +19,7 @@ export const gameState = {
   highScore: 0, // 最高分
   totalFeeds: 0, // 总投喂次数
   selectedMonster: 'default', // 选中的怪兽类型
+  isPetMode: false, // 是否处于桌宠模式（用于禁用某些游戏逻辑如互动AI）
 };
 
 // 怪兽情绪状态（供光环系统读取）

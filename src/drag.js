@@ -5,7 +5,7 @@
 
 import { getMonster, getCurrentMonsterConfig } from './monster.js';
 import { getActiveFoods, FOOD_TYPES } from './food.js';
-import { gameState, triggerFeedFeedback } from './state.js';
+import { gameState, triggerFeedFeedback, addScore } from './state.js';
 import { getUIRefs } from './ui.js';
 import { isFoodInForge, addFoodToForge, canCraft, craft, isClickOnForge, getForgeElement } from './forge.js';
 import { checkRecipe, unlockRecipe, RARITY_CONFIG } from './recipes.js';
@@ -484,8 +484,8 @@ function feedMonster(food) {
     }
   }
   
-  // 增加分数
-  gameState.score += points;
+  // 增加分数（包含累计）
+  addScore(points);
   
   // 增加饱食度（厌恶食物恢复较少，但被buff忽略的按普通计算）
   const hungerGain = effectiveHated ? foodType.points / 4 : foodType.points / 2;
@@ -758,6 +758,10 @@ function showReaction(monster, reaction) {
     nerd: '(⌐■_■)',
     reject: '(╬▔皿▔)',
     ignoreHate: '(🌀˘‿˘)',
+    // 学生向食物专属反应
+    disgusted: '(≧д≦)',   // DDL / 考卷 - 厌恶又无奈
+    excited: '(๑>◡<๑)',  // 能量饮料 - 亢奋
+    annoyed: '(╯°□°）╯', // 烦人弹窗 - 烦死了
   };
   
   const emoji = reactions[reaction] || '(◠‿◠)';
@@ -1357,8 +1361,8 @@ function createCraftedDish(recipe) {
     },
   ]);
 
-  // 增加游戏分数
-  gameState.score += recipe.points;
+  // 增加游戏分数（包含累计）
+  addScore(recipe.points);
 
   // 增加饱食度
   gameState.hunger = Math.min(100, gameState.hunger + recipe.points / 3);
@@ -1404,13 +1408,13 @@ function updateFoodTooltip() {
     
     // 用 toScreen 将逻辑坐标转为屏幕坐标
     const screen = logicToScreen(draggedFood.pos.x, draggedFood.pos.y);
-    // 逻辑尺寸转屏幕像素尺寸
+    // 逻辑尺寸转屏幕像素尺寸（actualSize 是半径/半尺寸，需除以2得到屏幕半径）
     const scale = getLogicToScreenScale();
-    const screenSize = actualSize * Math.min(scale.sx, scale.sy);
+    const screenRadius = actualSize / 2 * Math.min(scale.sx, scale.sy);
     
     tooltip.style.left = screen.x + 'px';
-    tooltip.style.top = (screen.y - screenSize - 10) + 'px';
-    tooltip.style.transform = 'translate(-50%, 0)';
+    tooltip.style.top = (screen.y - screenRadius - 10) + 'px';
+    tooltip.style.transform = 'translate(-50%, -100%)';
     tooltip.classList.add('visible', 'dragging');
     hoveredFood = draggedFood;
     return;
@@ -1442,13 +1446,13 @@ function updateFoodTooltip() {
     
     // 用 toScreen 将逻辑坐标转为屏幕坐标
     const screen = logicToScreen(foundFood.pos.x, foundFood.pos.y);
-    // 逻辑尺寸转屏幕像素尺寸
+    // 逻辑尺寸转屏幕像素尺寸（actualSize 是半径/半尺寸，需除以2得到屏幕半径）
     const scale = getLogicToScreenScale();
-    const screenSize = actualSize * Math.min(scale.sx, scale.sy);
+    const screenRadius = actualSize / 2 * Math.min(scale.sx, scale.sy);
     
     tooltip.style.left = screen.x + 'px';
-    tooltip.style.top = (screen.y - screenSize - 10) + 'px';
-    tooltip.style.transform = 'translate(-50%, 0)';
+    tooltip.style.top = (screen.y - screenRadius - 10) + 'px';
+    tooltip.style.transform = 'translate(-50%, -100%)';
     tooltip.classList.add('visible');
     hoveredFood = foundFood;
   } else {

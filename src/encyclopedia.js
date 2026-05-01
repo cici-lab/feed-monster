@@ -8,6 +8,7 @@ import { registerEncyclopediaFuncs } from './console.js';
 // 分类配置
 const CATEGORIES = {
   all: { name: '全部', color: '#b0b0b0' },
+  student: { name: '📚 学生', color: '#ff6b6b' },
   nature: { name: '自然', color: '#228b22' },
   liquid: { name: '液体', color: '#6496ff' },
   weird: { name: '奇怪', color: '#969696' },
@@ -86,7 +87,9 @@ function renderFoodList() {
   const allFoods = Object.entries(FOOD_TYPES);
   const foods = currentCategory === 'all' 
     ? allFoods.map(([k, f]) => ({ ...f, key: k }))
-    : allFoods.filter(([_, f]) => f.category === currentCategory).map(([k, f]) => ({ ...f, key: k }));
+    : currentCategory === 'student'
+      ? allFoods.filter(([_, f]) => f.studentFood).map(([k, f]) => ({ ...f, key: k }))
+      : allFoods.filter(([_, f]) => f.category === currentCategory).map(([k, f]) => ({ ...f, key: k }));
 
   // 更新统计
   if (stats) {
@@ -101,6 +104,8 @@ function renderFoodList() {
     item.className = 'enc-item';
     
     const catCfg = CATEGORIES[food.category] || CATEGORIES['all'];
+    const tagCfg = food.studentFood ? CATEGORIES['student'] : catCfg;
+    const tagName = food.studentFood ? '📚 学生' : catCfg.name;
     
     item.innerHTML = `
       <div class="enc-item-icon" style="background: ${rgbToCss(food.color)}"></div>
@@ -108,7 +113,7 @@ function renderFoodList() {
         <div class="enc-item-name">${food.name || '未知'}</div>
         <div class="enc-item-points">${food.points || 0} 分</div>
       </div>
-      <span class="enc-item-tag" style="background: ${catCfg.color}">${catCfg.name}</span>
+      <span class="enc-item-tag" style="background: ${tagCfg.color}">${tagName}</span>
     `;
     
     container.appendChild(item);

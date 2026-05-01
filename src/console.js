@@ -4,7 +4,7 @@
  * 便于测试和调试
  */
 
-import { gameState, saveGame, loadGame, resetGameState, checkGameOver } from './state.js';
+import { gameState, saveGame, loadGame, resetGameState, checkGameOver, addScore } from './state.js';
 import { createFood, FOOD_TYPES, getActiveFoods } from './food.js';
 import { getMonster } from './monster.js';
 import { getCollectedFoods, canCraft, getForgeConfig } from './forge.js';
@@ -88,7 +88,8 @@ export function initConsoleControls() {
      * @param {number} amount - 增加的分数量
      */
     addScore(amount) {
-      gameState.score += amount;
+      // 使用状态模块的 addScore 来维护累计分与持久化
+      addScore(amount);
       console.log(`[GameDebug] 分数增加 ${amount}，当前分数: ${gameState.score}`);
     },
     

@@ -68,6 +68,40 @@ export const RECIPES = {
     buff: { type: 'categoryBonus', duration: 10, params: { category: 'abstract', multiplier: 2 } },
   },
 
+  // ========== 学生向专属配方 ==========
+
+  stressBundle: {
+    id: 'stressBundle',
+    name: '压力套餐',
+    points: 60,
+    rarity: 'common',
+    priority: 7,
+    conditions: { weird: 2 },
+    description: '把所有烦恼都炖成一锅，喂给它！',
+    category: 'dish',
+    effect: '怪兽大口吞下烦恼，饱食度大幅恢复',
+    color: [255, 80, 80],
+    glow: true,
+    buff: { type: 'scoreMultiplier', duration: 10 },
+    studentSpecial: true,
+  },
+
+  allNighter: {
+    id: 'allNighter',
+    name: '通宵套装',
+    points: 72,
+    rarity: 'common',
+    priority: 11,
+    conditions: { weird: 1, liquid: 1 },
+    description: 'DDL + 能量饮料，熟悉的组合',
+    category: 'dish',
+    effect: '加分翻倍 + 食物生成加速',
+    color: [50, 50, 80],
+    glow: true,
+    buff: { type: 'cursedBoost', duration: 15 },
+    studentSpecial: true,
+  },
+
   // ========== 原有普通配方 ==========
 
   clearBroth: {

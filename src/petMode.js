@@ -14,7 +14,7 @@
  */
 
 import { createMonster, updateMonsterPosition, getMonster, loadSavedMonsterType } from './monster.js';
-import { gameState, saveGame, loadGame } from './state.js';
+import { gameState, saveGame, loadGame, addScore } from './state.js';
 
 // ──────────────────────────────────────────────────
 // 状态
@@ -558,21 +558,15 @@ function feedMonsterWithScreenshot(food) {
     const basePoints = Math.min(200, Math.max(20, Math.floor(area / 80)));
     const points = basePoints + Math.floor(Math.random() * 20);
 
-    // 5. 更新游戏状态
-    gameState.score += points;
+    // 5. 更新游戏状态（包含累计分）
+    addScore(points);
     gameState.hunger = Math.min(100, gameState.hunger + points / 10);
-    if (gameState.score > gameState.highScore) {
-      gameState.highScore = gameState.score;
-    }
 
     // 6. 显示得分
     showScorePopup(mPos.x, mPos.y - 50, points);
 
     // 7. 怪兽反应
     analyzeAndReact(food.dataURL, points);
-
-    // 8. 自动保存
-    saveGame();
   });
 }
 

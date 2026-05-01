@@ -173,4 +173,13 @@ export function initRecipePanelSystem() {
 
   // 注册控制台函数
   registerRecipePanelFuncs(openRec, closeRec);
+
+  // 监听分数变化，实时刷新配方面板（解锁状态会基于持久化的 highScore 计算）
+  try {
+    window.addEventListener('score:changed', () => {
+      refreshRecipePanel();
+    });
+  } catch (e) {
+    // 非浏览器环境忽略
+  }
 }

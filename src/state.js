@@ -9,6 +9,7 @@ const SAVE_KEY = 'feed-monster-save';
 // 游戏状态
 export const gameState = {
   score: 0,
+  cumulativeScore: 0, // 累计分数（跨局/跨会话累加，用于区分最高分）
   hunger: 50, // 饱食度 0-100
   health: 100, // 生命值 0-100
   monsterSize: 1,
@@ -73,6 +74,7 @@ export const feedFeedback = {
 export function saveGame() {
   const saveData = {
     score: gameState.score,
+    cumulativeScore: gameState.cumulativeScore || 0,
     hunger: gameState.hunger,
     health: gameState.health,
     monsterSize: gameState.monsterSize,
@@ -93,6 +95,7 @@ export function loadGame() {
     try {
       const data = JSON.parse(saved);
       gameState.highScore = data.highScore || 0;
+      gameState.cumulativeScore = data.cumulativeScore || 0;
       gameState.totalFeeds = data.totalFeeds || 0;
       gameState.selectedMonster = data.selectedMonster || 'default';
       console.log('[Save] 游戏存档已加载');
@@ -116,6 +119,45 @@ export function resetGameState() {
   gameState.combo = 0;
   gameState.lastFeedTime = 0;
   gameState.isGameOver = false;
+}
+
+/**
+ * 实时更新最高分（每次得分后调用）
+ * 如果当前分数超过历史最高，立即更新 highScore
+ */
+export function tryUpdateHighScore() {
+  if (gameState.score > gameState.highScore) {
+    gameState.highScore = gameState.score;
+    return true; // 返回 true 表示刷新了记录
+  }
+  return false;
+}
+
+/**
+ * 增加分数（包含累计分）
+ * - 更新当前分数
+ * - 更新累计分数（跨局/跨会话）
+ * - 检查并更新最高分
+ * - 持久化并触发 score:changed 事件，供 UI / 配方面板等订阅
+ */
+export function addScore(amount) {
+  if (!amount || typeof amount !== 'number') return false;
+  gameState.score += amount;
+  gameState.cumulativeScore = (gameState.cumulativeScore || 0) + amount;
+
+  const updatedHigh = tryUpdateHighScore();
+
+  // 持久化存档（保存最新的 highScore / cumulativeScore）
+  saveGame();
+
+  // 广播分数变化事件，其他模块可监听实时刷新（例如配方面板）
+  try {
+    window.dispatchEvent(new CustomEvent('score:changed', { detail: { score: gameState.score, highScore: gameState.highScore, cumulativeScore: gameState.cumulativeScore } }));
+  } catch (e) {
+    // 在非浏览器环境时可能失败，忽略
+  }
+
+  return updatedHigh;
 }
 
 /**

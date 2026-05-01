@@ -264,6 +264,7 @@ scene('game', () => {
     // 更新分数显示
     ui.updateScore(gameState.score);
     ui.updateHighScore(gameState.highScore);
+    if (ui.updateCumulativeScore) ui.updateCumulativeScore(gameState.cumulativeScore || 0);
     ui.updateHealth(gameState.health);
   });
 });

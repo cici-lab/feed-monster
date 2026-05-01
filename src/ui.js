@@ -7,8 +7,7 @@ import { showMonsterSelect } from './monsterSelect.js';
 import { setMonsterType } from './monster.js';
 import { cursorState } from './cursorHealth.js';
 
-let scoreDisplay = null;
-let highScoreDisplay = null; // 最高分解显
+let highScoreDisplay = null; // 最高分显示
 let hungerBar = null;
 let hungerFill = null;
 let healthBar = null;
@@ -34,29 +33,29 @@ export function createUI(state) {
     fixed(), // 固定位置，不受相机影响
   ]);
 
-  // 分数显示
-  const scoreLabel = uiContainer.add([
-    text('分数', { size: 16 }),
+  // 累计分数（跨局累积）
+  const cumulativeLabel = uiContainer.add([
+    text('累计分数', { size: 14 }),
     pos(0, 0),
     color(200, 200, 200),
   ]);
-  
-  scoreDisplay = uiContainer.add([
-    text('0', { size: 32, font: 'monospace' }),
+
+  const cumulativeDisplay = uiContainer.add([
+    text(`${state.cumulativeScore || 0}`, { size: 32, font: 'monospace' }),
     pos(0, 20),
     color(255, 255, 100),
   ]);
 
-  // 最高分解显
+  // 最高分显示
   highScoreDisplay = uiContainer.add([
     text(`最高分: ${state.highScore}`, { size: 14 }),
-    pos(0, 58),
+    pos(0, 56),
     color(255, 215, 0),
   ]);
 
   // 饱食度容器
   const hungerContainer = uiContainer.add([
-    pos(0, 70),
+    pos(0, 80),
   ]);
   
   hungerContainer.add([
@@ -376,16 +375,33 @@ export function createUI(state) {
 
   // 更新函数
   function updateScore(score) {
-    if (scoreDisplay) {
-      scoreDisplay.text = score.toString();
-    }
+    // per-game score hidden in UI; no-op
   }
 
-  // 更新最高分解显
+  // 更新最高分显示
   function updateHighScore(highScore) {
     if (highScoreDisplay) {
       highScoreDisplay.text = `最高分: ${highScore}`;
     }
+  }
+
+  // 更新累计分数显示
+  function updateCumulativeScore(cumulative) {
+    if (cumulativeDisplay) {
+      cumulativeDisplay.text = `${cumulative || 0}`;
+    }
+  }
+
+  // 监听分数变化事件，实时更新 UI（addScore 会派发）
+  try {
+    window.addEventListener('score:changed', (e) => {
+      const d = e && e.detail ? e.detail : {};
+      if (d.score !== undefined) updateScore(d.score);
+      if (d.highScore !== undefined) updateHighScore(d.highScore);
+      if (d.cumulativeScore !== undefined) updateCumulativeScore(d.cumulativeScore);
+    });
+  } catch (e) {
+    // 非浏览器环境忽略
   }
 
   function updateHunger(hunger) {
@@ -453,6 +469,7 @@ export function createUI(state) {
   uiRefs = {
     updateScore,
     updateHighScore,
+    updateCumulativeScore,
     updateHunger,
     updateHealth,
     updateCombo,

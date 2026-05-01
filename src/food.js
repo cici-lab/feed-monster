@@ -352,6 +352,57 @@ export const FOOD_TYPES = {
     size: 35,
     glow: true,
   },
+
+  // ========== 学生向食物（解压卖点）==========
+
+  deadline: {
+    name: 'DDL纸条',
+    emoji: '📝',
+    color: [255, 240, 200],
+    points: 30,
+    category: 'weird',
+    shape: 'deadline',
+    size: 32,
+    reaction: 'disgusted',
+    studentFood: true,
+  },
+
+  energyDrink: {
+    name: '能量饮料',
+    emoji: '🥤',
+    color: [255, 80, 0],
+    points: 35,
+    category: 'liquid',
+    shape: 'energyDrink',
+    size: 30,
+    reaction: 'excited',
+    glow: true,
+    studentFood: true,
+  },
+
+  notification: {
+    name: '烦人弹窗',
+    emoji: '🔔',
+    color: [255, 50, 50],
+    points: 28,
+    category: 'weird',
+    shape: 'notification',
+    size: 34,
+    reaction: 'annoyed',
+    studentFood: true,
+  },
+
+  examPaper: {
+    name: '考卷',
+    emoji: '📄',
+    color: [255, 255, 255],
+    points: 40,
+    category: 'weird',
+    shape: 'examPaper',
+    size: 36,
+    reaction: 'disgusted',
+    studentFood: true,
+  },
 };
 
 // 所有食物类型键列表
@@ -849,6 +900,92 @@ function drawFoodShape(food, foodType) {
         ]);
       }
       break;
+
+    case 'deadline': {
+      // DDL纸条：皱巴巴的便利贴，上面写着"DEADLINE"
+      const s = foodType.size;
+      // 纸张主体（微微倾斜的矩形）
+      food.add([rect(s, s * 0.8), color(255, 235, 150), anchor('center')]);
+      // 折角（右上角暗色三角）
+      food.add([rect(s * 0.3, s * 0.3), pos(s * 0.35, -s * 0.25), color(220, 190, 100), anchor('center')]);
+      // 红色"DEADLINE"标题条
+      food.add([rect(s * 0.85, s * 0.18), pos(0, -s * 0.25), color(220, 60, 60), anchor('center')]);
+      // 白色"DEADLINE"文字区域（用白色小矩形模拟）
+      food.add([rect(s * 0.65, s * 0.1), pos(0, -s * 0.25), color(255, 255, 255, 0.8), anchor('center')]);
+      // 三条内容线（模拟文字）
+      food.add([rect(s * 0.7, 3), pos(0, -s * 0.05), color(150, 120, 80), anchor('center')]);
+      food.add([rect(s * 0.6, 3), pos(-s * 0.05, s * 0.1), color(150, 120, 80), anchor('center')]);
+      // 红色感叹号
+      food.add([rect(4, s * 0.22), pos(s * 0.28, s * 0.18), color(220, 60, 60), anchor('center')]);
+      food.add([circle(3), pos(s * 0.28, s * 0.33), color(220, 60, 60), anchor('center')]);
+      break;
+    }
+
+    case 'energyDrink': {
+      // 能量饮料罐：红牛/功能饮料罐形象
+      const s = foodType.size;
+      // 罐身
+      food.add([rect(s * 0.55, s * 0.95), color(40, 40, 40), anchor('center')]);
+      // 顶盖
+      food.add([rect(s * 0.5, s * 0.1), pos(0, -s * 0.48), color(180, 180, 180), anchor('center')]);
+      // 底盖
+      food.add([rect(s * 0.5, s * 0.1), pos(0, s * 0.48), color(180, 180, 180), anchor('center')]);
+      // 橙红渐变条纹（从上到下两条）
+      food.add([rect(s * 0.55, s * 0.3), pos(0, -s * 0.15), color(c[0], c[1], c[2]), anchor('center')]);
+      food.add([rect(s * 0.55, s * 0.2), pos(0, s * 0.2), color(255, 150, 0), anchor('center')]);
+      // 闪电 LOGO（黄色菱形）
+      food.add([circle(s * 0.12), pos(0, s * 0.02), color(255, 230, 0), anchor('center')]);
+      food.add([rect(4, s * 0.25), pos(0, s * 0.02), color(255, 230, 0), anchor('center'), rotate(30)]);
+      // 顶部拉环
+      food.add([rect(s * 0.18, 4), pos(0, -s * 0.44), color(220, 220, 220), anchor('center')]);
+      break;
+    }
+
+    case 'notification': {
+      // 烦人弹窗：系统对话框样式
+      const s = foodType.size;
+      // 窗口主体（白色圆角矩形用两个矩形叠加模拟）
+      food.add([rect(s, s * 0.75), color(245, 245, 250), anchor('center')]);
+      // 红色标题栏
+      food.add([rect(s, s * 0.2), pos(0, -s * 0.28), color(c[0], c[1], c[2]), anchor('center')]);
+      // 标题栏上的 ✕ 关闭按钮（白色小圆）
+      food.add([circle(s * 0.1), pos(s * 0.38, -s * 0.28), color(255, 255, 255), anchor('center')]);
+      // 正文两条线（灰色）
+      food.add([rect(s * 0.75, 3), pos(0, -s * 0.05), color(180, 180, 180), anchor('center')]);
+      food.add([rect(s * 0.55, 3), pos(-s * 0.1, s * 0.08), color(180, 180, 180), anchor('center')]);
+      // 感叹号三角警告图标
+      food.add([circle(s * 0.13), pos(-s * 0.3, s * 0.05), color(255, 180, 0), anchor('center')]);
+      food.add([rect(3, s * 0.12), pos(-s * 0.3, s * 0.03), color(40, 40, 40), anchor('center')]);
+      food.add([circle(2), pos(-s * 0.3, s * 0.11), color(40, 40, 40), anchor('center')]);
+      // 底部"确定"按钮
+      food.add([rect(s * 0.35, s * 0.15), pos(s * 0.25, s * 0.25), color(c[0], c[1], c[2]), anchor('center')]);
+      food.add([rect(s * 0.35, s * 0.15), pos(-s * 0.2, s * 0.25), color(200, 200, 200), anchor('center')]);
+      break;
+    }
+
+    case 'examPaper': {
+      // 考卷：白纸 + 红色大叉/低分标记
+      const s = foodType.size;
+      // 纸张主体（白色）
+      food.add([rect(s, s * 0.85), color(255, 255, 252), anchor('center')]);
+      // 顶部标题区域（浅灰）
+      food.add([rect(s * 0.85, s * 0.12), pos(0, -s * 0.33), color(220, 220, 220), anchor('center')]);
+      // 内容线条（模拟试题）
+      food.add([rect(s * 0.78, 2), pos(0, -s * 0.15), color(200, 200, 200), anchor('center')]);
+      food.add([rect(s * 0.78, 2), pos(0, -s * 0.02), color(200, 200, 200), anchor('center')]);
+      food.add([rect(s * 0.78, 2), pos(0, s * 0.1), color(200, 200, 200), anchor('center')]);
+      food.add([rect(s * 0.6, 2), pos(-s * 0.09, s * 0.22), color(200, 200, 200), anchor('center')]);
+      // 大红叉（核心！发泄感来源）
+      food.add([rect(s * 0.6, 5), pos(0, s * 0.08), color(220, 40, 40), anchor('center'), rotate(45)]);
+      food.add([rect(s * 0.6, 5), pos(0, s * 0.08), color(220, 40, 40), anchor('center'), rotate(-45)]);
+      // 红色圈住的低分数字（左上角小圆圈）
+      food.add([circle(s * 0.2), pos(-s * 0.32, s * 0.3), color(0, 0, 0, 0), anchor('center')]);
+      food.add([rect(3, s * 0.2), pos(-s * 0.32, s * 0.3), color(220, 40, 40), anchor('center')]); // 数字"5"简化
+      food.add([rect(s * 0.15, 3), pos(-s * 0.32, s * 0.23), color(220, 40, 40), anchor('center')]);
+      // 红圈（分数圈）
+      food.add([circle(s * 0.18), pos(-s * 0.32, s * 0.3), color(220, 40, 40, 0.3), anchor('center')]);
+      break;
+    }
 
     default:
       // 默认圆形

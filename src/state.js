@@ -20,6 +20,12 @@ export const gameState = {
   totalFeeds: 0, // 总投喂次数
   selectedMonster: 'default', // 选中的怪兽类型
   isPetMode: false, // 是否处于桌宠模式（用于禁用某些游戏逻辑如互动AI）
+
+  // 开心指数系统（替代压力系统）
+  happiness: 50,          // 开心值 0-100（初始50为中性）
+  dailyJoyCount: 0,        // 今日开心次数（喂食使怪兽开心）
+  totalJoyCount: 0,        // 总开心次数
+  lastResetDate: '',       // 上次重置日期
 };
 
 // 怪兽情绪状态（供光环系统读取）
@@ -83,6 +89,11 @@ export function saveGame() {
     totalFeeds: gameState.totalFeeds,
     selectedMonster: gameState.selectedMonster,
     timestamp: Date.now(),
+    // 开心指数系统
+    happiness: gameState.happiness,
+    dailyJoyCount: gameState.dailyJoyCount,
+    totalJoyCount: gameState.totalJoyCount,
+    lastResetDate: gameState.lastResetDate,
   };
   localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
 }
@@ -99,6 +110,11 @@ export function loadGame() {
       gameState.cumulativeScore = data.cumulativeScore || 0;
       gameState.totalFeeds = data.totalFeeds || 0;
       gameState.selectedMonster = data.selectedMonster || 'default';
+      // 开心指数系统
+      gameState.happiness = data.happiness ?? 50;
+      gameState.dailyJoyCount = data.dailyJoyCount || 0;
+      gameState.totalJoyCount = data.totalJoyCount || 0;
+      gameState.lastResetDate = data.lastResetDate || '';
       console.log('[Save] 游戏存档已加载');
       return true;
     } catch (e) {
@@ -189,4 +205,124 @@ export function setSelectedMonster(monsterId) {
  */
 export function getSelectedMonster() {
   return gameState.selectedMonster;
+}
+
+// ═══════════════════════════════════════════════════════════
+// 开心指数系统（替代压力系统）
+// 设计理念：正面指标，不自动增长
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * 检查并重置每日计数（新的一天）
+ */
+function checkDailyReset() {
+  const today = new Date().toDateString();
+  if (gameState.lastResetDate !== today) {
+    gameState.dailyJoyCount = 0;
+    gameState.lastResetDate = today;
+    saveGame();
+  }
+}
+
+/**
+ * 获取开心等级
+ * @returns 'high' | 'medium' | 'low'
+ * high = 开心值 > 70（快乐满溢！）
+ * medium = 开心值 30-70（心情一般）
+ * low = 开心值 < 30（需要喂食了！）
+ */
+export function getJoyLevel() {
+  if (gameState.happiness > 70) return 'high';
+  if (gameState.happiness < 30) return 'low';
+  return 'medium';
+}
+
+/**
+ * 增加开心值（每次成功投喂时调用）
+ * 喂食让怪兽开心！
+ * @param {number} amount - 增加的开心值（默认15-25随机）
+ * @returns {object} - { added, newHappiness, level }
+ */
+export function addJoy(amount = null) {
+  checkDailyReset();
+
+  const addAmount = amount ?? (15 + Math.floor(Math.random() * 11)); // 15-25
+  const oldHappiness = gameState.happiness;
+  gameState.happiness = Math.min(100, gameState.happiness + addAmount);
+
+  gameState.dailyJoyCount++;
+  gameState.totalJoyCount++;
+
+  saveGame();
+
+  // 广播开心值变化事件
+  try {
+    window.dispatchEvent(new CustomEvent('joy:changed', {
+      detail: {
+        happiness: gameState.happiness,
+        level: getJoyLevel(),
+        dailyCount: gameState.dailyJoyCount,
+        totalCount: gameState.totalJoyCount,
+        added: gameState.happiness - oldHappiness
+      }
+    }));
+  } catch (e) {}
+
+  return {
+    added: gameState.happiness - oldHappiness,
+    newHappiness: gameState.happiness,
+    level: getJoyLevel()
+  };
+}
+
+/**
+ * 开心值随时间缓慢下降（只在下限保护）
+ * 玩家不喂食时开心值不会直接下降，而是怪兽看起来越来越不开心
+ * 这里仅做下限保护：开心值不低于 10
+ */
+export function drainJoy(amount = 0.2) {
+  checkDailyReset();
+  // 开心值不主动降，但设置一个下限保护（确保怪兽不会永久处于最低状态）
+  gameState.happiness = Math.max(10, gameState.happiness - amount);
+  saveGame();
+}
+
+/**
+ * 根据饱食度调整开心值
+ * 饱食度高 → 轻微增加开心值
+ * 饱食度低 → 轻微减少开心值
+ * @param {number} hunger - 当前饱食度 0-100
+ */
+export function adjustJoyByHunger(hunger) {
+  if (hunger > 80) {
+    // 饱食度高：心情愉悦，开心值+0.1
+    gameState.happiness = Math.min(100, gameState.happiness + 0.1);
+  } else if (hunger < 30) {
+    // 饱食度低：需要被喂，开心值-0.1
+    gameState.happiness = Math.max(10, gameState.happiness - 0.1);
+  }
+  // 饱食度中等时开心值不变
+  saveGame();
+}
+
+/**
+ * 获取开心状态信息
+ */
+export function getJoyInfo() {
+  checkDailyReset();
+  return {
+    happiness: gameState.happiness,
+    level: getJoyLevel(),
+    dailyCount: gameState.dailyJoyCount,
+    totalCount: gameState.totalJoyCount
+  };
+}
+
+/**
+ * 检查解锁条件（每日开心次数）
+ * @param {number} threshold - 解锁阈值
+ */
+export function checkUnlock(threshold) {
+  checkDailyReset();
+  return gameState.dailyJoyCount >= threshold;
 }

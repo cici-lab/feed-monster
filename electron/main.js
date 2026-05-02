@@ -461,11 +461,13 @@ ipcMain.handle('cancel-screenshot', () => {
 });
 
 // 移动桌宠窗口（用 on 而不是 handle，单向接收，减少 IPC 往返延迟）
+// 注意：硬编码窗口尺寸为 320×400，避免 getSize()→setBounds() 的坐标漂移
+//   在 DPI 缩放环境下 getSize() 返回值可能有浮点舍入误差，导致窗口越动越大
+const PET_WINDOW_W = 320;
+const PET_WINDOW_H = 400;
 ipcMain.on('move-pet-window', (event, { x, y }) => {
   if (petWindow && !petWindow.isDestroyed()) {
-    // setBounds 比 setPosition 更快，因为省去了内部尺寸查询
-    const [w, h] = petWindow.getSize();
-    petWindow.setBounds({ x: Math.round(x), y: Math.round(y), width: w, height: h }, false);
+    petWindow.setBounds({ x: Math.round(x), y: Math.round(y), width: PET_WINDOW_W, height: PET_WINDOW_H });
   }
 });
 

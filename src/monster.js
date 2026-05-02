@@ -4,7 +4,7 @@
  */
 
 import { getCursorPos, takeDamage, heal, cursorState, triggerPulse } from './cursorHealth.js';
-import { gameState, updateMonsterMood, triggerFeedFeedback } from './state.js';
+import { gameState, updateMonsterMood, triggerFeedFeedback, getJoyLevel } from './state.js';
 
 let monsterInstance = null;
 let baseY = 0;
@@ -186,8 +186,12 @@ export function loadSavedMonsterType() {
 
 /**
  * 创建怪物 - 部件化版本
+ * @param {number} x - x坐标
+ * @param {number} y - y坐标
+ * @param {string|null} type - 怪兽类型
+ * @param {boolean} fixedSize - 固定大小模式（桌宠模式用，禁用成长）
  */
-export function createMonster(x, y, type = null) {
+export function createMonster(x, y, type = null, fixedSize = false) {
   baseY = y;
   
   if (type && MONSTER_TYPES[type]) {
@@ -212,7 +216,31 @@ export function createMonster(x, y, type = null) {
   let animationTime = 0;
   let blinkTimer = 0;
   let isBlinking = false;
+  let blinkAnim = null; // 保存当前眨眼动画引用
+  let currentAnim = null; // 保存当前正在运行的其他动画引用（jump/eat/disgust）
   let mouthOpen = false;
+  let _fixedSize = fixedSize; // 记录是否固定大小模式
+  
+  // fixedSize 模式下重置所有可能累积的值
+  if (_fixedSize) {
+    targetScale = 1;
+    // 重置 monster 的所有属性
+    monster.scale = vec2(1);
+    monster.angle = 0;
+    // 重置所有部件到配置值（防御性恢复）
+    if (parts.body) parts.body.scale = vec2(config.parts.body.scale || 1);
+    if (parts.coreEye) parts.coreEye.scale = vec2(config.parts.coreEye.scale || 1);
+    if (parts.eye) parts.eye.scale = vec2(config.parts.eye.scale || 1);
+    if (parts.eyes) parts.eyes.forEach((e, i) => {
+      if (e && config.parts.eyes && config.parts.eyes[i]) {
+        e.scale = vec2(config.parts.eyes[i].scale || 1);
+      }
+    });
+    if (parts.coreStar) parts.coreStar.scale = vec2(config.parts.coreStar.scale || 1);
+    if (parts.witchHat) parts.witchHat.angle = config.parts.witchHat.rotation || 0;
+    if (parts.tail) parts.tail.angle = config.parts.tail.rotation || 0;
+    if (parts.sparkles) parts.sparkles.forEach(s => s.opacity = 1);
+  }
 
   // 判断是旧版单图还是新版部件
   if (config.legacy) {
@@ -244,7 +272,13 @@ export function createMonster(x, y, type = null) {
         monster.pos.y = baseY + Math.sin(floatTime * 2) * 5;
       }
       
-      // 缩放动画
+      // fixedSize 模式：强制保持 monster.scale = 1（防止任何情况被改变）
+      if (_fixedSize) {
+        monster.scale = vec2(1);
+        return;
+      }
+      
+      // 缩放动画（非 fixedSize 模式）
       const currentScale = monster.scale.x;
       const diff = targetScale - currentScale;
       if (Math.abs(diff) > 0.001) {
@@ -257,24 +291,30 @@ export function createMonster(x, y, type = null) {
       cancelCurrentAnim();
       currentState = 'idle'; 
       spriteObj.color = rgb(255, 255, 255); 
-      spriteObj.scale = vec2(1.2);
+      if (!_fixedSize) spriteObj.scale = vec2(1.2);
       updateMonsterMood(gameState.hunger);
     };
     monster.setHappy = () => { 
       cancelCurrentAnim();
       spriteObj.color = rgb(255, 255, 230); 
-      spriteObj.scale = vec2(1.25); 
+      if (!_fixedSize) spriteObj.scale = vec2(1.25); 
       updateMonsterMood(gameState.hunger);
     };
     monster.setSad = () => { 
       cancelCurrentAnim();
       spriteObj.color = rgb(200, 200, 255); 
-      spriteObj.scale = vec2(1.1); 
+      if (!_fixedSize) spriteObj.scale = vec2(1.1); 
       updateMonsterMood(gameState.hunger);
     };
     monster.setEating = () => { 
       cancelCurrentAnim();
       spriteObj.color = rgb(255, 255, 220);
+      if (_fixedSize) {
+        // fixedSize 模式下不执行缩放动画，直接回到 idle
+        spriteObj.scale = vec2(1.2);
+        monster.setIdle();
+        return;
+      }
       let phase = 0;
       currentAnim = onUpdate(() => {
         phase += dt() * 15;
@@ -288,8 +328,8 @@ export function createMonster(x, y, type = null) {
       });
     };
     monster.grow = (amount) => {
-      // 桌宠模式下禁止成长，防止游戏场景干扰桌宠怪兽
-      if (gameState.isPetMode) return;
+      // fixedSize 模式下禁用成长（桌宠模式）
+      if (_fixedSize) return;
       targetScale = Math.min(2.5, targetScale + amount);
       createGrowEffect(monster.pos);
     };
@@ -298,8 +338,130 @@ export function createMonster(x, y, type = null) {
     // 新版：部件化渲染
     createPartMonster(monster, parts, config);
     
+    // 保存部件原始缩放（用于 fixedSize 模式恢复）
+    const originalPartScales = {};
+    const saveOriginalScales = () => {
+      if (parts.body) originalPartScales.body = parts.body.scale.clone();
+      if (parts.coreEye) originalPartScales.coreEye = parts.coreEye.scale.clone();
+      if (parts.eye) originalPartScales.eye = parts.eye.scale.clone();
+      if (parts.eyes) originalPartScales.eyes = parts.eyes.map(e => e.scale.clone());
+    };
+    saveOriginalScales();
+    
     // 主更新循环
     onUpdate(() => {
+      // fixedSize 模式：保持大小固定，但保留轻微的待机动画
+      if (_fixedSize) {
+        // 获取当前开心等级
+        const joyLevel = getJoyLevel();
+        
+        // 强制保持 monster.scale = 1，防止任何累积变化
+        monster.scale = vec2(1);
+        
+        // 强制保持 monster.angle = 0（但低开心值时允许轻微抖动）
+        if (joyLevel === 'low') {
+          // 低开心值时：轻微不安抖动
+          animationTime += dt();
+          monster.angle = Math.sin(animationTime * 12) * 2;
+        } else {
+          monster.angle = 0;
+        }
+        
+        // 取消任何正在运行的眨眼动画
+        if (isBlinking && blinkAnim) {
+          blinkAnim.cancel();
+          blinkAnim = null;
+          isBlinking = false;
+        }
+        
+        // 取消任何正在运行的其他动画（jump/eat/disgust）
+        if (currentAnim) {
+          currentAnim.cancel();
+          currentAnim = null;
+        }
+        
+        // 恢复部件的原始缩放（防止动画累积导致的形变）
+        if (parts.body && originalPartScales.body) parts.body.scale = originalPartScales.body.clone();
+        if (parts.coreEye && originalPartScales.coreEye) parts.coreEye.scale = originalPartScales.coreEye.clone();
+        if (parts.eye && originalPartScales.eye) parts.eye.scale = originalPartScales.eye.clone();
+        if (parts.eyes) parts.eyes.forEach((e, i) => {
+          if (e && originalPartScales.eyes && originalPartScales.eyes[i]) {
+            e.scale = originalPartScales.eyes[i].clone();
+          }
+        });
+        
+        // 待机浮动效果（根据开心等级调整速度和幅度）
+        animationTime += dt();
+        let floatSpeed = 1.5;
+        let floatAmp = 3;
+        
+        if (joyLevel === 'low') {
+          // 低开心值：轻微焦虑不安（比之前高压稍弱）
+          floatSpeed = 2.0;
+          floatAmp = 4;
+        } else if (joyLevel === 'high') {
+          // 高开心值：活泼轻快（比之前低压稍活跃）
+          floatSpeed = 1.8;
+          floatAmp = 3.5;
+        }
+        
+        if (currentState === 'idle') {
+          monster.pos.y = baseY + Math.sin(animationTime * floatSpeed) * floatAmp;
+        }
+        
+        // 呼吸效果（根据开心等级调整）
+        if (parts.body) {
+          let breathSpeed = 2;
+          let breathAmp = 0.007;
+          
+          if (joyLevel === 'low') {
+            // 低开心值：呼吸略急促，身体微微暗淡
+            breathSpeed = 3;
+            breathAmp = 0.012;
+            // 身体微微暗淡/发蓝
+            parts.body.color = rgb(220, 220, 240);
+          } else if (joyLevel === 'high') {
+            // 高开心值：呼吸平稳，身心愉悦
+            breathSpeed = 1.5;
+            breathAmp = 0.006;
+            // 身体泛着淡淡暖光
+            parts.body.color = rgb(255, 245, 230);
+          } else {
+            // 中等开心值：恢复正常
+            breathSpeed = 2;
+            breathAmp = 0.007;
+            parts.body.color = rgb(255, 255, 255);
+          }
+          
+          const breathScale = 1 + Math.sin(animationTime * breathSpeed) * breathAmp;
+          parts.body.scale = vec2(breathScale);
+        }
+        
+        // 高开心值时眼睛发光效果
+        if (joyLevel === 'high') {
+          const glowIntensity = 0.5 + Math.sin(animationTime * 2) * 0.3;
+          if (parts.coreEye) {
+            parts.coreEye.opacity = Math.min(1, glowIntensity + 0.2);
+          }
+          if (parts.eye) {
+            parts.eye.opacity = Math.min(1, glowIntensity + 0.2);
+          }
+          if (parts.eyes) {
+            parts.eyes.forEach(e => {
+              e.opacity = Math.min(1, glowIntensity + 0.2);
+            });
+          }
+        } else {
+          // 恢复正常透明度
+          if (parts.coreEye) parts.coreEye.opacity = 1;
+          if (parts.eye) parts.eye.opacity = 1;
+          if (parts.eyes) parts.eyes.forEach(e => e.opacity = 1);
+        }
+        
+        // 不更新其他动画（眨眼、跳跃等），保持静止
+        return;
+      }
+      
       animationTime += dt();
       
       // 呼吸动画
@@ -427,7 +589,7 @@ export function createMonster(x, y, type = null) {
         monster.pos.y = baseY + Math.sin(animationTime * 1.5) * 3;
       }
       
-      // 缩放动画
+      // 缩放动画（使用 targetScale 进行平滑过渡）
       const currentScale = monster.scale.x;
       const diff = targetScale - currentScale;
       if (Math.abs(diff) > 0.001) {
@@ -438,13 +600,19 @@ export function createMonster(x, y, type = null) {
     // 眨眼函数
     function triggerBlink() {
       if (isBlinking) return;
+      // fixedSize 模式下禁用眨眼动画
+      if (_fixedSize) return;
+      // 取消之前的眨眼动画
+      if (blinkAnim) {
+        blinkAnim.cancel();
+      }
       isBlinking = true;
       
       // 眼魔眨眼
       if (parts.coreEye) {
         const originalScale = parts.coreEye.scale.x;
         let blinkPhase = 0;
-        const blinkAnim = onUpdate(() => {
+        blinkAnim = onUpdate(() => {
           blinkPhase += dt() * 20;
           const scale = blinkPhase < Math.PI ? 
             originalScale * (1 - Math.sin(blinkPhase) * 0.9) :
@@ -453,6 +621,7 @@ export function createMonster(x, y, type = null) {
           
           if (blinkPhase > Math.PI * 2) {
             blinkAnim.cancel();
+            blinkAnim = null;
             parts.coreEye.scale = vec2(originalScale);
             isBlinking = false;
           }
@@ -463,7 +632,7 @@ export function createMonster(x, y, type = null) {
       if (parts.eye) {
         const originalScale = parts.eye.scale.x;
         let blinkPhase = 0;
-        const blinkAnim = onUpdate(() => {
+        blinkAnim = onUpdate(() => {
           blinkPhase += dt() * 20;
           const scale = blinkPhase < Math.PI ? 
             originalScale * (1 - Math.sin(blinkPhase) * 0.9) :
@@ -472,6 +641,7 @@ export function createMonster(x, y, type = null) {
           
           if (blinkPhase > Math.PI * 2) {
             blinkAnim.cancel();
+            blinkAnim = null;
             parts.eye.scale = vec2(originalScale);
             isBlinking = false;
           }
@@ -482,7 +652,7 @@ export function createMonster(x, y, type = null) {
       if (parts.eyes) {
         const originalScales = parts.eyes.map(e => e.scale.x);
         let blinkPhase = 0;
-        const blinkAnim = onUpdate(() => {
+        blinkAnim = onUpdate(() => {
           blinkPhase += dt() * 20;
           parts.eyes.forEach((eye, i) => {
             const scale = blinkPhase < Math.PI ? 
@@ -493,6 +663,7 @@ export function createMonster(x, y, type = null) {
           
           if (blinkPhase > Math.PI * 2) {
             blinkAnim.cancel();
+            blinkAnim = null;
             parts.eyes.forEach((eye, i) => {
               eye.scale = vec2(originalScales[i]);
             });
@@ -513,13 +684,24 @@ export function createMonster(x, y, type = null) {
       currentState = 'happy';
       setMouthOpen(true);
       updateMonsterMood(gameState.hunger);
+      // fixedSize 模式下：只改变嘴巴和心情，不播放跳跃动画
+      if (_fixedSize) {
+        setTimeout(() => monster.setIdle(), 500);
+        return;
+      }
+      // 取消之前的动画
+      if (currentAnim) {
+        currentAnim.cancel();
+        currentAnim = null;
+      }
       // 跳跃效果
       let jumpPhase = 0;
-      const jumpAnim = onUpdate(() => {
+      currentAnim = onUpdate(() => {
         jumpPhase += dt() * 8;
         monster.pos.y = baseY - Math.abs(Math.sin(jumpPhase)) * 20;
         if (jumpPhase > Math.PI * 2) {
-          jumpAnim.cancel();
+          currentAnim.cancel();
+          currentAnim = null;
           monster.pos.y = baseY;
           monster.setIdle();
         }
@@ -537,12 +719,24 @@ export function createMonster(x, y, type = null) {
     
     monster.setEating = () => {
       currentState = 'eating';
+      // fixedSize 模式下：直接进入 idle 状态，不播放动画
+      if (_fixedSize) {
+        setMouthOpen(false);
+        monster.setIdle();
+        return;
+      }
+      // 取消之前的动画
+      if (currentAnim) {
+        currentAnim.cancel();
+        currentAnim = null;
+      }
       let eatPhase = 0;
-      const eatAnim = onUpdate(() => {
+      currentAnim = onUpdate(() => {
         eatPhase += dt() * 12;
         setMouthOpen(Math.sin(eatPhase) > 0);
         if (eatPhase > Math.PI * 3) {
-          eatAnim.cancel();
+          currentAnim.cancel();
+          currentAnim = null;
           setMouthOpen(false);
           monster.setIdle();
         }
@@ -557,6 +751,18 @@ export function createMonster(x, y, type = null) {
       currentState = 'disgust';
       setMouthOpen(true);
       
+      // fixedSize 模式下：只改变状态，不播放动画
+      if (_fixedSize) {
+        setTimeout(() => monster.setIdle(), 500);
+        return;
+      }
+      
+      // 取消之前的动画
+      if (currentAnim) {
+        currentAnim.cancel();
+        currentAnim = null;
+      }
+      
       // 保存原始颜色
       const originalColors = {};
       if (parts.body) originalColors.body = parts.body.color ? { r: parts.body.color.r, g: parts.body.color.g, b: parts.body.color.b } : null;
@@ -567,10 +773,21 @@ export function createMonster(x, y, type = null) {
       let disgustPhase = 0;
       let isAnimCancelled = false;
       
-      const disgustAnim = onUpdate(() => {
-        // 安全检查：如果动画已被取消或状态已改变，立即退出
-        if (isAnimCancelled || currentState !== 'disgust') {
-          disgustAnim.cancel();
+      currentAnim = onUpdate(() => {
+        // 安全检查：如果动画已被取消、状态已改变、或进入 fixedSize 模式，立即退出
+        if (isAnimCancelled || currentState !== 'disgust' || _fixedSize) {
+          currentAnim.cancel();
+          currentAnim = null;
+          // 立即恢复所有属性
+          monster.angle = 0;
+          if (parts.body && parts.body.exists()) parts.body.scale = vec2(1);
+          if (parts.coreEye && parts.coreEye.exists()) parts.coreEye.scale = vec2(1);
+          if (parts.eye && parts.eye.exists()) parts.eye.scale = vec2(1);
+          if (parts.eyes) parts.eyes.forEach((eye, i) => {
+            if (eye && eye.exists() && config.parts.eyes && config.parts.eyes[i]) {
+              eye.scale = vec2(config.parts.eyes[i].scale || 1);
+            }
+          });
           return;
         }
         
@@ -664,7 +881,8 @@ export function createMonster(x, y, type = null) {
         // 动画持续1.5秒后结束
         if (disgustPhase > 1.5) {
           isAnimCancelled = true;
-          disgustAnim.cancel();
+          currentAnim.cancel();
+          currentAnim = null;
           monster.angle = 0;
           
           // 恢复身体缩放
@@ -687,8 +905,8 @@ export function createMonster(x, y, type = null) {
     };
     
     monster.grow = (amount) => {
-      // 桌宠模式下禁止成长，防止游戏场景干扰桌宠怪兽
-      if (gameState.isPetMode) return;
+      // fixedSize 模式下禁用成长（桌宠模式）
+      if (_fixedSize) return;
       targetScale = Math.min(2.5, targetScale + amount);
       createGrowEffect(monster.pos);
     };
@@ -765,6 +983,8 @@ export function createMonster(x, y, type = null) {
     // 开始追逐鼠标
     function startChase(targetPos) {
       if (interactionCooldown > 0) return;
+      // fixedSize 模式下禁用追逐动画
+      if (_fixedSize) return;
       interactionState = 'chase';
       interactionCooldown = 2;
       
@@ -799,6 +1019,8 @@ export function createMonster(x, y, type = null) {
     // 开始躲避鼠标
     function startFlee(cursorPos) {
       if (interactionCooldown > 0) return;
+      // fixedSize 模式下禁用躲避动画
+      if (_fixedSize) return;
       interactionState = 'flee';
       interactionCooldown = 2;
       
@@ -821,6 +1043,8 @@ export function createMonster(x, y, type = null) {
     // 开始攻击鼠标
     function startAttack(targetPos) {
       if (interactionCooldown > 0) return;
+      // fixedSize 模式下禁用攻击动画
+      if (_fixedSize) return;
       interactionState = 'attack';
       interactionCooldown = 3;
       
@@ -866,6 +1090,8 @@ export function createMonster(x, y, type = null) {
     // 开始治愈鼠标（舔舐/发射爱心）
     function startHeal(targetPos) {
       if (interactionCooldown > 0) return;
+      // fixedSize 模式下禁用治愈动画
+      if (_fixedSize) return;
       interactionState = 'heal';
       interactionCooldown = 4;
       
@@ -1384,4 +1610,11 @@ export function updateMonsterPosition(x, y) {
     monsterInstance.pos.x = x;
     monsterInstance.pos.y = y;
   }
+}
+
+/**
+ * 仅更新 baseY（用于桌宠模式 IPC 移动后同步浮动基准）
+ */
+export function setBaseY(newBaseY) {
+  baseY = newBaseY;
 }

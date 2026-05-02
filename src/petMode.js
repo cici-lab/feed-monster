@@ -13,8 +13,8 @@
  *   5. 左键拖拽怪兽 → 在桌面上移动位置
  */
 
-import { createMonster, updateMonsterPosition, getMonster, loadSavedMonsterType } from './monster.js';
-import { gameState, saveGame, loadGame, addScore } from './state.js';
+import { createMonster, updateMonsterPosition, getMonster, loadSavedMonsterType, setBaseY } from './monster.js';
+import { gameState, saveGame, loadGame, addScore, addJoy, adjustJoyByHunger, getJoyLevel, getJoyInfo } from './state.js';
 
 // ──────────────────────────────────────────────────
 // 状态
@@ -39,6 +39,7 @@ let dragging = {
 // 怪兽拖拽移动（桌宠在桌面上拖来拖去）
 let petDrag = {
   active: false,
+  initialized: false, // 等待 getPetWindowPos 返回后再处理拖拽
   startWinX: 0,
   startWinY: 0,
   startMouseX: 0,
@@ -97,6 +98,9 @@ export function enterPetMode() {
   document.body.classList.add('pet-mode');
   document.documentElement.classList.add('pet-mode');
 
+  // 创建开心仪表盘
+  createJoyGauge();
+
   // 只有桌宠窗口（URL 含 ?mode=pet）才切换到桌宠场景
   const params = new URLSearchParams(window.location.search);
   if (params.get('mode') === 'pet') {
@@ -124,6 +128,12 @@ export function exitPetMode() {
     if (f.domEl) f.domEl.remove();
   });
   screenshotFoods = [];
+  
+  // 清理开心仪表盘
+  if (pressureGaugeEl) {
+    pressureGaugeEl.remove();
+    pressureGaugeEl = null;
+  }
 }
 
 // ──────────────────────────────────────────────────
@@ -143,7 +153,8 @@ export function registerPetScene() {
 
     // ── 创建怪兽 ──
     // 逻辑分辨率 1200x800，怪兽在中央
-    petMonster = createMonster(width() / 2, height() / 2 + 80);
+    // fixedSize=true：桌宠模式下怪兽大小固定，不受喂食界面成长影响
+    petMonster = createMonster(width() / 2, height() / 2 + 80, null, true);
 
     // ── 摄像机：横向放大补偿 stretch 压缩 ──
     // 窗口 320x400，逻辑 1200x800
@@ -355,8 +366,13 @@ function setupPetInteraction() {
       if (dragging.active) return;
 
       petDrag.active = true;
+      petDrag.initialized = false; // 重置，等待 getPetWindowPos 返回
       petDrag.startMouseX = e.screenX;
       petDrag.startMouseY = e.screenY;
+      petDrag.startWinX = 0; // 备用值
+      petDrag.startWinY = 0;
+      petDrag.lastWinX = 0;
+      petDrag.lastWinY = 0;
 
       // 获取当前窗口位置（仅在按下时获取一次，之后靠增量计算）
       if (window.electronAPI && window.electronAPI.getPetWindowPos) {
@@ -365,7 +381,16 @@ function setupPetInteraction() {
           petDrag.startWinY = pos.y;
           petDrag.lastWinX = pos.x;
           petDrag.lastWinY = pos.y;
+          petDrag.initialized = true; // 标记已初始化
+
+          // 同步 baseY，避免弹回
+          setBaseY(petMonster ? petMonster.pos.y : height() / 2 + 80);
+        }).catch(() => {
+          // 出错也标记为已初始化，使用备用值
+          petDrag.initialized = true;
         });
+      } else {
+        petDrag.initialized = true;
       }
     });
   }
@@ -380,7 +405,7 @@ function setupPetInteraction() {
 function onPetMouseMove(e) {
   // 处理窗口拖拽（怪兽拖拽移动）
   // 用 requestAnimationFrame 节流：多次 mousemove 只发一次 IPC
-  if (petDrag.active && window.electronAPI && window.electronAPI.movePetWindow) {
+  if (petDrag.active && petDrag.initialized && window.electronAPI && window.electronAPI.movePetWindow) {
     const dx = e.screenX - petDrag.startMouseX;
     const dy = e.screenY - petDrag.startMouseY;
     petDrag.pendingX = petDrag.startWinX + dx;
@@ -394,6 +419,13 @@ function onPetMouseMove(e) {
           petDrag.lastWinX = petDrag.pendingX;
           petDrag.lastWinY = petDrag.pendingY;
           window.electronAPI.movePetWindow({ x: petDrag.pendingX, y: petDrag.pendingY });
+
+          // 同步更新 baseY，避免浮动动画导致位置弹回
+          // 怪兽在窗口中位于 canvas 中央偏下 (offsetY = 80)
+          const windowScreenTop = petDrag.pendingY;
+          const monsterScreenY = windowScreenTop + 200 + 80; // canvas高一半 + 偏移
+          const newBaseY = monsterScreenY; // Kaplay 坐标直接对应屏幕像素
+          setBaseY(newBaseY);
         }
       });
     }
@@ -445,9 +477,15 @@ function onPetMouseUp(e) {
       // 确保最终位置已发送
       if (window.electronAPI && window.electronAPI.movePetWindow) {
         window.electronAPI.movePetWindow({ x: petDrag.pendingX, y: petDrag.pendingY });
+
+        // 同步更新 baseY 到最终位置
+        const windowScreenTop = petDrag.pendingY;
+        const monsterScreenY = windowScreenTop + 200 + 80;
+        setBaseY(monsterScreenY);
       }
     }
     petDrag.active = false;
+    petDrag.initialized = false;
     return;
   }
 
@@ -564,11 +602,15 @@ function feedMonsterWithScreenshot(food) {
     addScore(points);
     gameState.hunger = Math.min(100, gameState.hunger + points / 10);
 
-    // 6. 显示得分
+    // 6. 让怪兽开心！（替代"释放压力"）
+    const joyResult = addJoy();
+    showJoyIncreaseEffect(mPos, joyResult);
+
+    // 7. 显示得分
     showScorePopup(mPos.x, mPos.y - 50, points);
 
-    // 7. 怪兽反应
-    analyzeAndReact(food.dataURL, points);
+    // 8. 怪兽反应
+    analyzeAndReact(food.dataURL, points, joyResult.level);
   });
 }
 
@@ -684,7 +726,7 @@ function shatterFood(food, centerPos) {
 // ──────────────────────────────────────────────────
 // 简单图像分析 → 小怪兽反应
 // ──────────────────────────────────────────────────
-function analyzeAndReact(dataURL, points) {
+function analyzeAndReact(dataURL, points, joyLevel = 'medium') {
   const img = new Image();
   img.onload = () => {
     const cvs = document.createElement('canvas');
@@ -721,6 +763,14 @@ function analyzeAndReact(dataURL, points) {
     } else {
       petMonster && petMonster.setEating && petMonster.setEating();
       showReactionBubble('(•ᴗ•) 嗯嗯~');
+    }
+
+    // 根据开心等级添加额外反馈
+    if (joyLevel === 'high') {
+      // 非常开心！显示开心效果
+      setTimeout(() => {
+        showReactionBubble('(≧◡≦) 开心到飞起！');
+      }, 800);
     }
   };
   img.src = dataURL;
@@ -901,6 +951,74 @@ function showScorePopup(x, y, points) {
   requestAnimationFrame(animateScore);
 }
 
+/**
+ * 开心增加特效
+ */
+function showJoyIncreaseEffect(mPos, result) {
+  if (result.level === 'high') {
+    // 非常开心！显示爱心特效
+    for (let i = 0; i < 6; i++) {
+      const heart = document.createElement('div');
+      heart.textContent = '💖';
+      heart.style.cssText = `
+        position: fixed;
+        left: ${mPos.x + (Math.random() - 0.5) * 40}px;
+        top: ${mPos.y - 20}px;
+        font-size: 16px;
+        pointer-events: none;
+        z-index: 10004;
+        animation: heartFloat 0.8s ease-out forwards;
+      `;
+      document.body.appendChild(heart);
+      setTimeout(() => heart.remove(), 800);
+    }
+  }
+
+  // 显示开心值上升指示
+  const increase = document.createElement('div');
+  increase.textContent = `开心 +${result.added}`;
+  increase.style.cssText = `
+    position: fixed;
+    left: ${mPos.x + 40}px;
+    top: ${mPos.y - 30}px;
+    font-size: 12px;
+    font-weight: bold;
+    font-family: monospace;
+    color: ${result.level === 'high' ? '#ff6b9d' : result.level === 'low' ? '#ffd700' : '#2ed573'};
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    pointer-events: none;
+    z-index: 10006;
+    opacity: 0;
+  `;
+  document.body.appendChild(increase);
+
+  increase.animate([
+    { opacity: 0, transform: 'translateY(0) scale(0.8)' },
+    { opacity: 1, transform: 'translateY(-10px) scale(1)', offset: 0.2 },
+    { opacity: 1, transform: 'translateY(-25px) scale(1)', offset: 0.6 },
+    { opacity: 0, transform: 'translateY(-40px) scale(0.8)' }
+  ], {
+    duration: 1000,
+    easing: 'ease-out',
+    fill: 'forwards'
+  });
+
+  setTimeout(() => increase.remove(), 1000);
+
+  // 添加动画样式
+  if (!document.getElementById('joy-effect-style')) {
+    const style = document.createElement('style');
+    style.id = 'joy-effect-style';
+    style.textContent = `
+      @keyframes heartFloat {
+        from { transform: translateY(0) scale(1); opacity: 1; }
+        to { transform: translateY(-30px) scale(1.2); opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
 // ──────────────────────────────────────────────────
 // 饱食度自然下降
 // ──────────────────────────────────────────────────
@@ -916,6 +1034,10 @@ function startHungerTick() {
     }
     gameState.hunger = Math.max(0, gameState.hunger - 0.5);
 
+    // 根据饱食度调整开心值（饱食度高→开心，低→不开心）
+    adjustJoyByHunger(gameState.hunger);
+    updateJoyGauge();
+
     if (petMonster) {
       if (gameState.hunger < 20) {
         petMonster.setSad && petMonster.setSad();
@@ -927,3 +1049,235 @@ function startHungerTick() {
     }
   }, 1000);
 }
+
+// ═══════════════════════════════════════════════════════════
+// 开心指数可视化系统
+// 设计理念：正面指标，玩家喂食让怪兽开心
+// ═══════════════════════════════════════════════════════════
+
+let pressureGaugeEl = null; // 复用变量名，但内容是开心仪表盘
+
+/**
+ * 创建开心仪表盘 UI
+ */
+function createJoyGauge() {
+  if (pressureGaugeEl) pressureGaugeEl.remove();
+
+  const gauge = document.createElement('div');
+  gauge.id = 'joy-gauge';
+  gauge.style.cssText = `
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    width: 60px;
+    height: 60px;
+    z-index: 9998;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  `;
+
+  // 内层圆形进度条
+  const ring = document.createElement('div');
+  ring.id = 'joy-ring';
+  ring.style.cssText = `
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: conic-gradient(
+      var(--joy-color, #ffd700) 0%,
+      var(--joy-color, #ffd700) var(--joy-percent, 50%),
+      rgba(255,255,255,0.1) var(--joy-percent, 50%),
+      rgba(255,255,255,0.1) 100%
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.5s ease;
+  `;
+
+  // 中心显示
+  const center = document.createElement('div');
+  center.style.cssText = `
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(20, 20, 35, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  `;
+
+  const icon = document.createElement('div');
+  icon.textContent = '😊';
+  icon.style.cssText = `
+    font-size: 16px;
+    line-height: 1;
+  `;
+
+  const value = document.createElement('div');
+  value.id = 'joy-value';
+  value.textContent = '50';
+  value.style.cssText = `
+    font-size: 11px;
+    font-weight: bold;
+    color: #fff;
+    font-family: monospace;
+  `;
+
+  center.appendChild(icon);
+  center.appendChild(value);
+  ring.appendChild(center);
+  gauge.appendChild(ring);
+
+  // 鼠标悬停显示详情
+  gauge.addEventListener('mouseenter', () => {
+    showJoyTooltip(gauge);
+  });
+  gauge.addEventListener('mouseleave', () => {
+    const tip = document.getElementById('joy-tooltip');
+    if (tip) tip.remove();
+  });
+
+  document.body.appendChild(gauge);
+  pressureGaugeEl = gauge;
+
+  // 监听开心值变化
+  window.addEventListener('joy:changed', (e) => {
+    const { happiness, level, added } = e.detail;
+    animateJoyChange(added);
+  });
+
+  updateJoyGauge();
+}
+
+/**
+ * 更新开心仪表盘显示
+ */
+function updateJoyGauge() {
+  if (!pressureGaugeEl) return;
+
+  const happiness = gameState.happiness;
+  const level = getJoyLevel();
+
+  // 颜色映射：开心值越高颜色越温暖（绿→黄→粉红）
+  let color;
+  if (level === 'high') {
+    color = '#ff6b9d'; // 粉色（超开心！）
+  } else if (level === 'low') {
+    color = '#a0c4ff'; // 蓝色（有点不开心）
+  } else {
+    color = '#ffd700'; // 黄色（心情一般）
+  }
+
+  pressureGaugeEl.style.setProperty('--joy-color', color);
+  pressureGaugeEl.style.setProperty('--joy-percent', `${happiness}%`);
+
+  // 更新数值
+  const valueEl = document.getElementById('joy-value');
+  if (valueEl) {
+    valueEl.textContent = Math.round(happiness);
+  }
+}
+
+/**
+ * 开心值变化动画
+ */
+function animateJoyChange(added) {
+  if (!pressureGaugeEl) return;
+
+  // 仪表盘弹跳效果
+  pressureGaugeEl.style.transform = 'scale(1.2)';
+  setTimeout(() => {
+    pressureGaugeEl.style.transform = 'scale(1)';
+  }, 150);
+
+  // 涟漪扩散效果
+  const ripple = document.createElement('div');
+  ripple.style.cssText = `
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 3px solid ${added > 15 ? '#ff6b9d' : '#ffd700'};
+    animation: joyRipple 0.6s ease-out forwards;
+    pointer-events: none;
+    z-index: 9997;
+  `;
+  document.body.appendChild(ripple);
+
+  setTimeout(() => ripple.remove(), 600);
+
+  // 添加动画样式（如果还没有）
+  if (!document.getElementById('joy-anim-style')) {
+    const style = document.createElement('style');
+    style.id = 'joy-anim-style';
+    style.textContent = `
+      @keyframes joyRipple {
+        from { transform: scale(1); opacity: 1; }
+        to { transform: scale(2.5); opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  updateJoyGauge();
+}
+
+/**
+ * 显示开心详情提示
+ */
+function showJoyTooltip(gauge) {
+  const old = document.getElementById('joy-tooltip');
+  if (old) old.remove();
+
+  const info = getJoyInfo();
+  const tip = document.createElement('div');
+  tip.id = 'joy-tooltip';
+  tip.style.cssText = `
+    position: fixed;
+    bottom: 84px;
+    right: 16px;
+    background: rgba(20, 20, 35, 0.95);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 10px 12px;
+    z-index: 9999;
+    min-width: 120px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    font-family: sans-serif;
+    font-size: 12px;
+    color: #fff;
+    animation: tooltipIn 0.2s ease;
+  `;
+
+  const levelText = {
+    high: '💖 超开心！',
+    medium: '😊 心情不错',
+    low: '😢 需要喂食了'
+  };
+
+  tip.innerHTML = `
+    <div style="font-weight: bold; margin-bottom: 6px; color: ${info.level === 'high' ? '#ff6b9d' : info.level === 'low' ? '#a0c4ff' : '#ffd700'}">
+      ${levelText[info.level]}
+    </div>
+    <div style="display: flex; justify-content: space-between; margin: 3px 0;">
+      <span style="color: #888">今日开心</span>
+      <span style="font-weight: bold;">${info.dailyCount} 次</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin: 3px 0;">
+      <span style="color: #888">总开心</span>
+      <span style="font-weight: bold;">${info.totalCount} 次</span>
+    </div>
+    <div style="margin-top: 6px; font-size: 10px; color: #666;">
+      喂食让怪兽更开心！
+    </div>
+  `;
+
+  document.body.appendChild(tip);
+}
+
+

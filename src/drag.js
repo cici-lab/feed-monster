@@ -324,22 +324,25 @@ function endDrag() {
 function applyThrowPhysics(food) {
   const friction = 0.95;
   let velocity = { x: throwVelocity.x, y: throwVelocity.y };
-  
+
   food.use({
     id: 'throwPhysics',
     update() {
+      // 桌宠模式下停止物理更新，避免碰撞检测继续干扰桌宠怪兽
+      if (gameState.isPetMode) return;
+
       // 检查食物是否仍然存在
       if (!food || !food.exists || !food.exists()) {
         return;
       }
-      
+
       if (Math.abs(velocity.x) > 5 || Math.abs(velocity.y) > 5) {
         food.pos.x += velocity.x * dt();
         food.pos.y += velocity.y * dt();
-        
+
         velocity.x *= friction;
         velocity.y *= friction;
-        
+
         // 检查碰撞
         const monster = getMonster();
         if (monster && checkCollision(food, monster)) {

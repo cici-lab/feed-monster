@@ -288,6 +288,8 @@ export function createMonster(x, y, type = null) {
       });
     };
     monster.grow = (amount) => {
+      // 桌宠模式下禁止成长，防止游戏场景干扰桌宠怪兽
+      if (gameState.isPetMode) return;
       targetScale = Math.min(2.5, targetScale + amount);
       createGrowEffect(monster.pos);
     };
@@ -685,6 +687,8 @@ export function createMonster(x, y, type = null) {
     };
     
     monster.grow = (amount) => {
+      // 桌宠模式下禁止成长，防止游戏场景干扰桌宠怪兽
+      if (gameState.isPetMode) return;
       targetScale = Math.min(2.5, targetScale + amount);
       createGrowEffect(monster.pos);
     };

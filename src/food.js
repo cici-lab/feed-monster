@@ -498,8 +498,8 @@ export function createFood() {
     {
       wobbleTime: 0,
       update() {
-        // 如果在合成炉中，停止移动
-        if (this.inForge) return;
+        // 如果在合成炉或正在被拖拽，停止移动
+        if (this.inForge || this.isBeingDragged) return;
         
         this.wobbleTime += dt();
         

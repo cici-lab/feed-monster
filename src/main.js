@@ -8,6 +8,7 @@ import { createForge } from './forge.js';
 import { initRecipeSystem } from './recipes.js';
 import { initEncyclopediaSystem } from './encyclopedia.js';
 import { initRecipePanelSystem } from './recipePanel.js';
+import { initAchievements, initAchievementPanelSystem, checkAchievements } from './achievements.js';
 import { initConsoleControls, registerCraftTrigger, registerFullscreenToggle } from './console.js';
 import { initMonsterSelectSystem, showMonsterSelect, hideMonsterSelect } from './monsterSelect.js';
 import { initCursorHealth, cleanupCursorHealth, resetCursorHealth, cursorState } from './cursorHealth.js';
@@ -87,6 +88,7 @@ scene('title', () => {
   
   // 加载存档和怪兽选择
   loadGame();
+  initAchievements();
   loadSavedMonsterType();
   initMonsterSelectSystem();
   
@@ -189,6 +191,12 @@ scene('game', () => {
 
   // 初始化配方面板系统
   initRecipePanelSystem();
+
+  // 初始化成就系统
+  initAchievementPanelSystem();
+
+  // 检查成就进度
+  checkAchievements();
 
   // 初始化全屏控制
   initFullscreenControls();

@@ -26,6 +26,14 @@ export const gameState = {
   dailyJoyCount: 0,        // 今日开心次数（喂食使怪兽开心）
   totalJoyCount: 0,        // 总开心次数
   lastResetDate: '',       // 上次重置日期
+
+  // 成就统计（跨局持久化）
+  totalCrafts: 0,         // 总合成次数
+  totalDragFeeds: 0,      // 总拖拽喂食次数
+  totalHatedFeeds: 0,     // 总厌恶食物喂食次数
+  maxComboEver: 0,        // 历史最高连击
+  totalSpeedBonuses: 0,   // 投掷加成触发次数（×1.2以上）
+  punishmentCrafts: 0,    // 惩罚配方合成次数
 };
 
 // 怪兽情绪状态（供光环系统读取）
@@ -94,6 +102,13 @@ export function saveGame() {
     dailyJoyCount: gameState.dailyJoyCount,
     totalJoyCount: gameState.totalJoyCount,
     lastResetDate: gameState.lastResetDate,
+    // 成就统计
+    totalCrafts: gameState.totalCrafts || 0,
+    totalDragFeeds: gameState.totalDragFeeds || 0,
+    totalHatedFeeds: gameState.totalHatedFeeds || 0,
+    maxComboEver: gameState.maxComboEver || 0,
+    totalSpeedBonuses: gameState.totalSpeedBonuses || 0,
+    punishmentCrafts: gameState.punishmentCrafts || 0,
   };
   localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
 }
@@ -115,6 +130,13 @@ export function loadGame() {
       gameState.dailyJoyCount = data.dailyJoyCount || 0;
       gameState.totalJoyCount = data.totalJoyCount || 0;
       gameState.lastResetDate = data.lastResetDate || '';
+      // 成就统计
+      gameState.totalCrafts = data.totalCrafts || 0;
+      gameState.totalDragFeeds = data.totalDragFeeds || 0;
+      gameState.totalHatedFeeds = data.totalHatedFeeds || 0;
+      gameState.maxComboEver = data.maxComboEver || 0;
+      gameState.totalSpeedBonuses = data.totalSpeedBonuses || 0;
+      gameState.punishmentCrafts = data.punishmentCrafts || 0;
       console.log('[Save] 游戏存档已加载');
       return true;
     } catch (e) {
@@ -325,4 +347,64 @@ export function getJoyInfo() {
 export function checkUnlock(threshold) {
   checkDailyReset();
   return gameState.dailyJoyCount >= threshold;
+}
+
+// ═══════════════════════════════════════════════════════════
+// 成就统计记录函数
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * 获取当前成就统计数据快照
+ */
+export function getAchievementStats() {
+  return {
+    totalCrafts: gameState.totalCrafts || 0,
+    totalDragFeeds: gameState.totalDragFeeds || 0,
+    totalHatedFeeds: gameState.totalHatedFeeds || 0,
+    maxComboEver: gameState.maxComboEver || 0,
+    totalSpeedBonuses: gameState.totalSpeedBonuses || 0,
+    punishmentCrafts: gameState.punishmentCrafts || 0,
+    totalFeeds: gameState.totalFeeds || 0,
+    dailyJoyCount: gameState.dailyJoyCount || 0,
+  };
+}
+
+/**
+ * 记录一次合成
+ */
+export function recordCraft(isPunishment = false) {
+  gameState.totalCrafts = (gameState.totalCrafts || 0) + 1;
+  if (isPunishment) {
+    gameState.punishmentCrafts = (gameState.punishmentCrafts || 0) + 1;
+  }
+  saveGame();
+}
+
+/**
+ * 记录一次拖拽喂食
+ */
+export function recordDragFeed() {
+  gameState.totalDragFeeds = (gameState.totalDragFeeds || 0) + 1;
+  gameState.totalFeeds = (gameState.totalFeeds || 0) + 1;
+  // 更新历史最高连击
+  if (gameState.combo > (gameState.maxComboEver || 0)) {
+    gameState.maxComboEver = gameState.combo;
+  }
+  saveGame();
+}
+
+/**
+ * 记录一次厌恶食物喂食
+ */
+export function recordHatedFeed() {
+  gameState.totalHatedFeeds = (gameState.totalHatedFeeds || 0) + 1;
+  saveGame();
+}
+
+/**
+ * 记录一次投掷速度加成
+ */
+export function recordSpeedBonus() {
+  gameState.totalSpeedBonuses = (gameState.totalSpeedBonuses || 0) + 1;
+  saveGame();
 }

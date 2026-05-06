@@ -5,20 +5,28 @@
  */
 
 import { monsterMood, feedFeedback } from './state.js';
+import { hasBuff } from './buffs.js';
 
 // 鼠标血量状态
 export const cursorState = {
   health: 100,           // 当前血量 0-100
   maxHealth: 100,        // 最大血量
-  recoveryRate: 2,       // 静止恢复速率（每秒）
-  moveCost: 0.02,        // 移动消耗（每像素）
+  recoveryRate: 2,       // 空闲恢复速率（每秒）
+  isDragging: false,     // 是否正在拖拽食物
+  dragDistance: 0,       // 本次拖拽累计距离（每帧累计，消耗后归零）
+  dragDistanceCost: 0.03,// 每像素消耗能量（拖1200像素=36能量）
+  lowEnergyThreshold: 30,// 低能量阈值（低于此值时拖拽阻力）
   isWeak: false,         // 是否处于虚弱状态
   weakTimer: 0,          // 虚弱状态计时器
-  weakDuration: 10,      // 虚弱状态持续时间（秒）
+  weakDuration: 8,       // 虚弱状态持续时间（秒）
   lastPos: { x: 0, y: 0 },// 上一帧位置
   isMoving: false,       // 是否在移动
   moveSpeed: 0,          // 移动速度
   breathPhase: 0,        // 呼吸动画相位
+
+  // 纯净移动模式：移动不消耗能量（只有拖拽才消耗）
+  // 保留 moveCost 是为了兼容，但不再用于自动消耗
+  moveCost: 0,
 };
 
 // 光环组件引用
@@ -177,6 +185,9 @@ export function initCursorHealth() {
     getCursorPos,
     isWeak: () => cursorState.isWeak,
     getHealth: () => cursorState.health,
+    startCursorDrag,
+    endCursorDrag,
+    getDragMultiplier,
   };
 }
 
@@ -198,10 +209,10 @@ function updateCursorPosition() {
   cursorState.moveSpeed = Math.min(distance / deltaTime, 2000);
   cursorState.isMoving = distance > 2;
   
-  // 移动消耗血量（限制最大消耗）
-  if (cursorState.isMoving && !cursorState.isWeak) {
-    const cost = Math.min(distance * cursorState.moveCost * cursorState.moveSpeed * 0.001, 1);
-    cursorState.health = Math.max(0, cursorState.health - cost);
+  // 能量消耗不再在移动时触发，只在拖拽时消耗
+  // 按拖拽距离累计，在 updateHealthRecovery 中消耗
+  if (cursorState.isDragging && distance > 0) {
+    cursorState.dragDistance += distance;
   }
   
   // 计算目标位置
@@ -290,6 +301,9 @@ function updateAuraVisuals() {
   // 计算最终半径
   const baseRadius = healthRadius + breathOffset * breathMultiplier;
   
+  // 低能量状态特殊效果（拖拽能量不足）
+  const isLowEnergy = cursorState.isDragging && healthPercent < 0.3;
+  
   // 虚弱状态特殊处理
   if (cursorState.isWeak) {
     // 紫色脉动
@@ -315,6 +329,29 @@ function updateAuraVisuals() {
       core.radius = 4 + healthPercent * 4;
       core.color = rgb(200, 150, 255);
       core.opacity = 0.9;
+    }
+  } else if (isLowEnergy) {
+    // 低能量拖拽：红色闪烁警示
+    const redPulse = 0.6 + Math.sin(time() * 12) * 0.4;
+    if (outerGlow && outerGlow.exists()) {
+      outerGlow.radius = baseRadius + 10;
+      outerGlow.color = rgb(255, 80, 80);
+      outerGlow.opacity = 0.12 * redPulse;
+    }
+    if (mainRing && mainRing.exists()) {
+      mainRing.radius = baseRadius * 0.7;
+      mainRing.color = rgb(255, 80 + Math.floor(healthPercent * 170), 80);
+      mainRing.opacity = 0.6 + Math.sin(time() * 10) * 0.3;
+    }
+    if (innerRing && innerRing.exists()) {
+      innerRing.radius = baseRadius * 0.35;
+      innerRing.color = rgb(255, 100, 100);
+      innerRing.opacity = 0.3 + Math.sin(time() * 15) * 0.2;
+    }
+    if (core && core.exists()) {
+      core.radius = 3 + healthPercent * 3;
+      core.color = rgb(255, 150, 150);
+      core.opacity = 0.7 + Math.sin(time() * 8) * 0.2;
     }
   } else {
     // 正常状态 - 使用情绪颜色
@@ -359,23 +396,39 @@ function updateAuraVisuals() {
 }
 
 /**
- * 更新血量自然恢复
+ * 更新血量恢复/消耗
+ * 核心规则：移动不消耗能量，只有拖拽食物才消耗
+ * 消耗按拖拽距离计算（拖越远耗越多）
  */
 function updateHealthRecovery() {
-  if (cursorState.isWeak) return;
-  
-  // 静止时恢复
-  if (!cursorState.isMoving && cursorState.health < cursorState.maxHealth) {
-    cursorState.health = Math.min(
-      cursorState.maxHealth,
-      cursorState.health + cursorState.recoveryRate * dt()
-    );
+  if (cursorState.isWeak) {
+    cursorState.dragDistance = 0; // 虚弱时清除累计距离
+    return;
   }
   
-  // 检查是否触发虚弱状态
-  if (cursorState.health <= 0 && !cursorState.isWeak) {
-    enterWeakState();
-    return; // 避免与 takeDamage 重复触发
+  if (cursorState.isDragging && cursorState.dragDistance > 0) {
+    // 按累计拖拽距离消耗能量
+    let costRate = cursorState.dragDistanceCost;
+    if (hasBuff('weakness')) {
+      costRate *= 2; // 虚弱诅咒：每像素消耗翻倍
+    }
+    const energyCost = cursorState.dragDistance * costRate;
+    cursorState.health = Math.max(0, cursorState.health - energyCost);
+    cursorState.dragDistance = 0; // 消耗后清零
+
+    if (cursorState.health <= 0) {
+      enterWeakState();
+      return;
+    }
+  } else if (!cursorState.isDragging) {
+    // 空闲时快速恢复
+    cursorState.dragDistance = 0;
+    if (cursorState.health < cursorState.maxHealth) {
+      cursorState.health = Math.min(
+        cursorState.maxHealth,
+        cursorState.health + cursorState.recoveryRate * dt()
+      );
+    }
   }
 }
 
@@ -720,23 +773,63 @@ function showHealNumber(x, y, amount) {
 }
 
 /**
- * 显示虚弱状态提示
+ * 显示虚弱状态提示（增强版——让玩家明确知道这是设计）
  */
 function showWeakNotification(x, y) {
-  add([
-    text('虚弱!', { size: 28 }),
-    pos(x, y - 60),
+  // 主文字：大字弹跳效果
+  const mainText = add([
+    text('😩 拖不动啦~', { size: 36 }),
+    pos(x, y - 70),
     anchor('center'),
-    color(150, 100, 180),
+    color(255, 200, 100),
     opacity(1),
-    lifespan(2),
+    lifespan(2.5),
     z(105),
     {
       update() {
-        this.opacity = Math.max(0, this.opacity - dt() * 0.5);
+        this.opacity = Math.max(0, this.opacity - dt() * 0.35);
+        this.pos.y -= 5 * dt(); // 缓慢上浮
       }
     },
   ]);
+
+  // 副文字：提示恢复时间
+  add([
+    text(`休息 ${cursorState.weakDuration} 秒就好了...`, { size: 16 }),
+    pos(x, y - 35),
+    anchor('center'),
+    color(180, 150, 200),
+    opacity(1),
+    lifespan(2.5),
+    z(105),
+    {
+      update() {
+        this.opacity = Math.max(0, this.opacity - dt() * 0.35);
+        this.pos.y -= 5 * dt();
+      }
+    },
+  ]);
+
+  // 震荡粒子（叹号）
+  for (let i = 0; i < 5; i++) {
+    const angle = (i / 5) * Math.PI * 2 + Math.random() * 0.5;
+    const speed = rand(80, 150);
+    add([
+      text('❗', { size: 14 }),
+      pos(x, y - 40),
+      anchor('center'),
+      opacity(0.8),
+      lifespan(0.6),
+      z(104),
+      {
+        update() {
+          this.pos.x += Math.cos(angle) * speed * dt();
+          this.pos.y += Math.sin(angle) * speed * dt() - 30 * dt();
+          this.opacity -= dt() * 1.5;
+        }
+      },
+    ]);
+  }
 }
 
 /**
@@ -744,16 +837,17 @@ function showWeakNotification(x, y) {
  */
 function showRecoveryNotification(x, y) {
   add([
-    text('恢复了!', { size: 24 }),
+    text('💪 恢复啦！继续喂！', { size: 24 }),
     pos(x, y - 50),
     anchor('center'),
-    color(100, 255, 150),
+    color(100, 255, 180),
     opacity(1),
     lifespan(1.5),
     z(105),
     {
       update() {
         this.opacity = Math.max(0, this.opacity - dt() * 0.67);
+        this.pos.y -= 10 * dt();
       }
     },
   ]);
@@ -765,6 +859,8 @@ function showRecoveryNotification(x, y) {
 export function resetCursorHealth() {
   cursorState.health = 100;
   cursorState.isWeak = false;
+  cursorState.isDragging = false;
+  cursorState.dragDistance = 0;
   cursorState.weakTimer = 0;
   cursorState.lastPos = { x: mousePos().x, y: mousePos().y };
 }
@@ -838,4 +934,49 @@ export function cleanupCursorHealth() {
  */
 export function getCursorAura() {
   return mainRing;
+}
+
+// ═══════════════════════════════════════════════════════════
+// 拖拽能量接口（供 drag.js 调用）
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * 开始拖拽消耗能量
+ * 由 drag.js 在 startDrag 时调用
+ */
+export function startCursorDrag() {
+  cursorState.isDragging = true;
+  cursorState.dragDistance = 0;
+}
+
+/**
+ * 结束拖拽（停止能量消耗）
+ * 由 drag.js 在 endDrag 时调用
+ */
+export function endCursorDrag() {
+  cursorState.isDragging = false;
+}
+
+/**
+ * 获取当前拖拽阻力系数
+ * @returns {number} 0-1，1=正常拖拽，0=无法拖拽
+ * 
+ * 规则：
+ * - health > 30% → 返回 1（正常）
+ * - health 1-30% → 返回 0.2~0.99（delta 衰减，粘手感）
+ * - health = 0% → 返回 0（无法拖拽）
+ */
+export function getDragMultiplier() {
+  if (cursorState.isWeak || cursorState.health <= 0) return 0;
+  
+  const healthPercent = cursorState.health / cursorState.maxHealth;
+  
+  if (healthPercent >= cursorState.lowEnergyThreshold / 100) {
+    return 1; // 能量充足，正常拖拽
+  }
+  
+  // 低能量：0.2 ~ 0.99 的阻尼系数
+  // health=30% → 1.0, health=0% → 0.2
+  const t = healthPercent / (cursorState.lowEnergyThreshold / 100);
+  return 0.2 + t * 0.8;
 }

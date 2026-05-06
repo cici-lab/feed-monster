@@ -5,12 +5,14 @@
 
 import { getMonster, getCurrentMonsterConfig } from './monster.js';
 import { getActiveFoods, FOOD_TYPES } from './food.js';
-import { gameState, triggerFeedFeedback, addScore } from './state.js';
+import { gameState, triggerFeedFeedback, addScore, recordDragFeed, recordHatedFeed, recordSpeedBonus, recordCraft } from './state.js';
 import { getUIRefs } from './ui.js';
 import { isFoodInForge, addFoodToForge, canCraft, craft, isClickOnForge, getForgeElement } from './forge.js';
 import { checkRecipe, unlockRecipe, RARITY_CONFIG } from './recipes.js';
 import { applyBuff, getScoreMultiplier, shouldIgnoreHate, getCategoryBonus, BUFF_TYPES } from './buffs.js';
 import { registerCraftTrigger, registerFullscreenToggle } from './console.js';
+import { startCursorDrag, endCursorDrag, getDragMultiplier } from './cursorHealth.js';
+import { checkAchievements } from './achievements.js';
 
 let isDragging = false;
 let draggedFood = null;
@@ -19,6 +21,7 @@ let dragPositions = []; // 存储拖拽轨迹点
 let dragStartTime = 0;
 let lastMousePos = null;
 let throwVelocity = { x: 0, y: 0 };
+let dragHintText = null; // 低能量拖拽时的跟随提示
 
 // 轨迹点
 let trailPoints = [];
@@ -217,13 +220,25 @@ export function initDragSystem(monster, state) {
 export { triggerCraft };
 
 function startDrag(food, mouse) {
+  // 检查鼠标能量是否足够拖拽
+  const multiplier = getDragMultiplier();
+  if (multiplier <= 0) {
+    // 能量耗尽，显示提示
+    showNoEnergyFeedback(food.pos.x, food.pos.y);
+    return;
+  }
+  
   isDragging = true;
   draggedFood = food;
+  food.isBeingDragged = true; // 停止食物的自动飘动
   dragStartPos = { x: food.pos.x, y: food.pos.y };
   dragStartTime = time();
   dragPositions = [{ x: mouse.x, y: mouse.y, time: time() }];
   lastMousePos = { x: mouse.x, y: mouse.y };
   throwVelocity = { x: 0, y: 0 };
+  
+  // 开始消耗鼠标能量
+  startCursorDrag();
   
   // 高亮被拖拽的食物
   food.opacity = 0.8;
@@ -233,6 +248,12 @@ function startDrag(food, mouse) {
 function updateDrag() {
   // 检查 draggedFood 是否仍然有效
   if (!draggedFood || !draggedFood.exists || !draggedFood.exists()) {
+    if (dragHintText) {
+      if (dragHintText.exists && dragHintText.exists()) dragHintText.destroy();
+      dragHintText = null;
+    }
+    if (draggedFood) draggedFood.isBeingDragged = false;
+    endCursorDrag();
     isDragging = false;
     draggedFood = null;
     return;
@@ -240,11 +261,18 @@ function updateDrag() {
   
   const mouse = mousePos();
   
-  // 更新食物位置
-  draggedFood.pos.x = mouse.x;
-  draggedFood.pos.y = mouse.y;
+  // 计算鼠标增量（来自真实鼠标位置，用于速度计算和位置更新）
+  const dx = mouse.x - lastMousePos.x;
+  const dy = mouse.y - lastMousePos.y;
   
-  // 计算速度
+  // 获取拖拽阻尼系数（低能量时 < 1，产生粘手感）
+  const dragMultiplier = getDragMultiplier();
+  
+  // 更新食物位置（使用 delta 阻尼：低能量时增量衰减，模拟鼠标 DPI 降低）
+  draggedFood.pos.x += dx * dragMultiplier;
+  draggedFood.pos.y += dy * dragMultiplier;
+  
+  // 计算速度（基于真实鼠标速度，不受阻尼影响，投掷力度一致）
   const currentTime = time();
   if (lastMousePos) {
     const dt = 1/60; // 假设60fps
@@ -263,6 +291,32 @@ function updateDrag() {
   // 创建轨迹视觉效果
   addTrailPoint(mouse.x, mouse.y);
   
+  // 低能量拖拽时显示跟随提示（持续可见，让用户知道这不是 bug）
+  if (dragMultiplier < 1) {
+    if (!dragHintText || !dragHintText.exists || !dragHintText.exists()) {
+      const hints = ['有点沉…', '拖不动…', '好重…', '用力！', '嘿咻…'];
+      const hint = hints[Math.floor(Math.random() * hints.length)];
+      dragHintText = add([
+        text(`⚡ ${hint}`, { size: 14 }),
+        pos(draggedFood.pos.x, draggedFood.pos.y - 45),
+        anchor('center'),
+        color(255, 200, 100),
+        opacity(0.75),
+        z(25),
+      ]);
+    } else {
+      // 每一帧更新位置，让提示跟随食物
+      dragHintText.pos.x = draggedFood.pos.x;
+      dragHintText.pos.y = draggedFood.pos.y - 45;
+    }
+  } else {
+    // 阻尼解除或正常拖拽，移除提示
+    if (dragHintText && dragHintText.exists && dragHintText.exists()) {
+      dragHintText.destroy();
+    }
+    dragHintText = null;
+  }
+  
   lastMousePos = { x: mouse.x, y: mouse.y };
   
   // 检查是否与怪物碰撞（桌宠模式下跳过，避免游戏场景碰撞检测干扰桌宠怪兽）
@@ -277,6 +331,20 @@ function updateDrag() {
 
 function endDrag() {
   if (!draggedFood) return;
+  
+  // 清理拖拽提示
+  if (dragHintText && dragHintText.exists && dragHintText.exists()) {
+    dragHintText.destroy();
+  }
+  dragHintText = null;
+  
+  // 结束鼠标能量消耗
+  endCursorDrag();
+  
+  // 恢复食物自动飘动
+  if (draggedFood) {
+    draggedFood.isBeingDragged = false;
+  }
   
   // 检查食物是否仍然存在
   if (!draggedFood.exists || !draggedFood.exists()) {
@@ -375,7 +443,14 @@ function feedMonster(food) {
   // 桌宠模式下跳过，避免游戏场景干扰桌宠怪兽
   if (gameState.isPetMode) return;
 
+  // 清理拖拽提示
+  if (dragHintText) {
+    if (dragHintText.exists && dragHintText.exists()) dragHintText.destroy();
+    dragHintText = null;
+  }
+
   // 先重置拖拽状态，防止异常导致卡死
+  endCursorDrag();
   isDragging = false;
   draggedFood = null;
   
@@ -423,6 +498,17 @@ function feedMonster(food) {
   }
   gameState.lastFeedTime = now;
 
+  // 成就统计：记录一次拖拽喂食
+  recordDragFeed();
+
+  // 投掷速度加成计数（×1.2 以上算触发）
+  if (speedBonus > 1.2) {
+    recordSpeedBonus();
+  }
+
+  // 检查成就进度
+  checkAchievements();
+
   // 计算基础得分（加入 buff 加成）
   const buffMultiplier = getScoreMultiplier();
   const categoryBonus = getCategoryBonus(foodType.category);
@@ -431,6 +517,9 @@ function feedMonster(food) {
   // 处理厌恶食物
   if (effectiveHated) {
     disgustCount++;
+    
+    // 成就统计：记录厌恶食物
+    recordHatedFeed();
     
     // 分数减半
     points = Math.floor(points / 2);
@@ -1059,6 +1148,60 @@ export function drawTrailLine() {
   }
 }
 
+// 显示能量耗尽提示（强化版，让玩家明确这是设计）
+function showNoEnergyFeedback(x, y) {
+  // 大号主文字
+  add([
+    text('🫠 拖不动啦~', { size: 28 }),
+    pos(x, y - 60),
+    anchor('center'),
+    color(255, 180, 80),
+    opacity(1),
+    lifespan(1.5),
+    z(50),
+    {
+      update() {
+        this.pos.y -= 15 * dt();
+        this.opacity -= 0.3 * dt();
+      }
+    },
+  ]);
+
+  // 小提示
+  add([
+    text('等能量恢复再试试...', { size: 14 }),
+    pos(x, y - 35),
+    anchor('center'),
+    color(180, 160, 200),
+    opacity(0.8),
+    lifespan(1.5),
+    z(50),
+    {
+      update() {
+        this.pos.y -= 15 * dt();
+        this.opacity -= 0.3 * dt();
+      }
+    },
+  ]);
+
+  // 闪烁 X 标记
+  add([
+    text('✖', { size: 22 }),
+    pos(x, y - 85),
+    anchor('center'),
+    color(255, 100, 100),
+    opacity(1),
+    lifespan(0.8),
+    z(50),
+    {
+      update() {
+        this.opacity = 0.5 + Math.sin(time() * 20) * 0.5;
+        this.pos.y -= 15 * dt();
+      }
+    },
+  ]);
+}
+
 // 显示合成炉已满特效
 function showForgeFullEffect(food) {
   add([
@@ -1093,7 +1236,19 @@ function triggerCraft() {
     }
 
     const isNewUnlock = unlockRecipe(recipe.id);
-    showCraftSuccessEffect(recipe, isNewUnlock);
+    
+    // 记录合成（区分惩罚与非惩罚）
+    recordCraft(recipe.isPunishment || false);
+    
+    if (recipe.isPunishment) {
+      // 惩罚配方：绿色毒雾特效
+      showCraftPunishmentEffect(recipe);
+    } else if (recipe.isTradeoff) {
+      // 有舍有得配方：暗金色光芒特效
+      showCraftTradeoffEffect(recipe);
+    } else {
+      showCraftSuccessEffect(recipe, isNewUnlock);
+    }
     createCraftedDish(recipe);
 
     // 应用 buff 效果
@@ -1103,6 +1258,9 @@ function triggerCraft() {
         applyBuff(recipe.buff.type, recipe.buff.duration, recipe.buff.params || {});
       }
     }
+
+    // 检查成就进度
+    checkAchievements();
   }
 }
 
@@ -1269,6 +1427,151 @@ function showCraftFailEffect() {
 }
 
 // 创建料理产物（视觉展示，不纳入食材系统）
+// 显示惩罚配方特效
+function showCraftPunishmentEffect(recipe) {
+  const forgePos = getForgeElement()?.pos || vec2(150, height() / 2);
+
+  // 暗色冲击波
+  add([
+    circle(120),
+    pos(forgePos),
+    color(60, 120, 60),
+    opacity(0.5),
+    anchor('center'),
+    z(50),
+    {
+      life: 0.6,
+      update() {
+        this.life -= dt();
+        this.scale = vec2(1 + (0.6 - this.life) * 3);
+        this.opacity = this.life * 0.8;
+        if (this.life <= 0) this.destroy();
+      }
+    },
+  ]);
+
+  // 骷髅标记
+  add([
+    text('☠️', { size: 40 }),
+    pos(forgePos.x, forgePos.y - 60),
+    anchor('center'),
+    opacity(1),
+    lifespan(1.2),
+    z(51),
+    {
+      update() {
+        this.pos.y -= 25 * dt();
+        this.opacity -= 0.3 * dt();
+      }
+    },
+  ]);
+
+  // 警告文字
+  add([
+    text(`⚠️ ${recipe.name}!`, { size: 22 }),
+    pos(forgePos.x, forgePos.y - 110),
+    anchor('center'),
+    color(180, 220, 180),
+    opacity(1),
+    lifespan(1.5),
+    z(50),
+    {
+      update() {
+        this.pos.y -= 30 * dt();
+        this.opacity -= 0.2 * dt();
+      }
+    },
+  ]);
+
+  // 绿色毒雾粒子
+  for (let i = 0; i < 12; i++) {
+    const angle = (i / 12) * Math.PI * 2;
+    const speed = rand(80, 160);
+    add([
+      circle(rand(6, 14)),
+      pos(forgePos),
+      color(80, 180, 80),
+      opacity(0.5),
+      lifespan(0.8),
+      z(45),
+      {
+        update() {
+          this.pos.x += Math.cos(angle) * speed * dt();
+          this.pos.y += Math.sin(angle) * speed * dt();
+          this.opacity -= dt() * 0.6;
+        }
+      },
+    ]);
+  }
+
+  // 怪兽不爽
+  const monster = getMonster();
+  if (monster && monster.setDisgust) {
+    monster.setDisgust();
+  }
+}
+
+// 显示有舍有得配方特效（暗金色光芒）
+function showCraftTradeoffEffect(recipe) {
+  const forgePos = getForgeElement()?.pos || vec2(150, height() / 2);
+
+  // 暗金色冲击波
+  add([
+    circle(100),
+    pos(forgePos),
+    color(200, 170, 50),
+    opacity(0.5),
+    anchor('center'),
+    z(50),
+    {
+      life: 0.7,
+      update() {
+        this.life -= dt();
+        this.scale = vec2(1 + (0.7 - this.life) * 3);
+        this.opacity = this.life * 0.7;
+        if (this.life <= 0) this.destroy();
+      }
+    },
+  ]);
+
+  // 天平符号
+  add([
+    text('⚖️', { size: 36 }),
+    pos(forgePos.x, forgePos.y - 50),
+    anchor('center'),
+    opacity(1),
+    lifespan(1.2),
+    z(51),
+    {
+      update() {
+        this.pos.y -= 20 * dt();
+        this.opacity -= 0.3 * dt();
+      }
+    },
+  ]);
+
+  // 火花粒子
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * Math.PI * 2;
+    const speed = rand(100, 200);
+    add([
+      circle(rand(3, 6)),
+      pos(forgePos),
+      color(255, 200, 50 + rand(0, 100)),
+      opacity(0.7),
+      lifespan(0.7),
+      z(45),
+      {
+        update() {
+          this.pos.x += Math.cos(angle) * speed * dt();
+          this.pos.y += Math.sin(angle) * speed * dt();
+          this.opacity -= dt() * 0.7;
+        }
+      },
+    ]);
+  }
+}
+
 function createCraftedDish(recipe) {
   const forgePos = getForgeElement()?.pos || vec2(150, height() / 2);
   const size = 40;
@@ -1337,11 +1640,15 @@ function createCraftedDish(recipe) {
   });
 
   // 显示料理名称
+  const isPunishment = recipe.isPunishment || false;
+  const isTradeoff = recipe.isTradeoff || false;
+  const namePrefix = isPunishment ? '（?）' : isTradeoff ? '（⚖️）' : '';
+  const nameColor = isPunishment ? [180, 200, 180] : isTradeoff ? [255, 220, 150] : [255, 245, 210];
   add([
-    text(`料理：${recipe.name}`, { size: 18 }),
+    text(`料理${namePrefix}：${recipe.name}`, { size: 18 }),
     pos(forgePos.x, forgePos.y - 95),
     anchor('center'),
-    color(255, 245, 210),
+    color(nameColor[0], nameColor[1], nameColor[2]),
     opacity(1),
     lifespan(1.3),
     z(20),
@@ -1353,11 +1660,13 @@ function createCraftedDish(recipe) {
   ]);
 
   // 显示得分
+  const scorePrefix = recipe.points >= 0 ? '+' : '';
+  const scoreColor = isPunishment ? [255, 100, 100] : (recipe.points < 0 ? [255, 200, 100] : [255, 255, 100]);
   add([
-    text(`+${recipe.points}`, { size: 32, font: 'monospace' }),
+    text(`${scorePrefix}${recipe.points}`, { size: 32, font: 'monospace' }),
     pos(forgePos.x, forgePos.y - 60),
     anchor('center'),
-    color(255, 255, 100),
+    color(scoreColor[0], scoreColor[1], scoreColor[2]),
     opacity(1),
     lifespan(1.5),
     z(20),
@@ -1371,8 +1680,18 @@ function createCraftedDish(recipe) {
   // 增加游戏分数（包含累计）
   addScore(recipe.points);
 
-  // 增加饱食度
-  gameState.hunger = Math.min(100, gameState.hunger + recipe.points / 3);
+  // 惩罚配方降低饱食度，正常配方增加饱食度
+  if (isPunishment) {
+    gameState.hunger = Math.max(0, gameState.hunger + recipe.points / 3); // points是负数
+    // 惩罚配方：怪兽不开心
+    if (typeof gameState.drainJoy === 'function') {
+      try { gameState.drainJoy(5); } catch(e) {}
+    }
+    // 惩罚配方：扣点生命值以示警告
+    gameState.health = Math.max(0, gameState.health - 3);
+  } else {
+    gameState.hunger = Math.min(100, gameState.hunger + recipe.points / 3);
+  }
 }
 
 // 当前悬停的食物

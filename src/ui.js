@@ -363,6 +363,15 @@ export function createUI(state) {
     if (cursorState.isWeak) {
       cursorStateText.text = '⚠ 虚弱状态';
       cursorStateText.color = rgb(150, 100, 180);
+    } else if (cursorState.isDragging && healthPercent < 0.3) {
+      cursorStateText.text = `⚡ 拖拽中 ${Math.floor(cursorState.health)}%`;
+      cursorStateText.color = rgb(255, 150, 50);
+    } else if (cursorState.isDragging) {
+      cursorStateText.text = `⚡ 拖拽中 ${Math.floor(cursorState.health)}%`;
+      cursorStateText.color = rgb(100, 220, 200);
+    } else if (healthPercent <= 0) {
+      cursorStateText.text = '⚡ 能量耗尽！';
+      cursorStateText.color = rgb(220, 80, 80);
     } else if (healthPercent < 0.3) {
       cursorStateText.text = '⚠ 能量不足';
       cursorStateText.color = rgb(220, 80, 80);

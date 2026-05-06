@@ -87,6 +87,23 @@ export const BUFF_TYPES = {
     icon: '👑',
     color: [255, 215, 0],
   },
+  // ═══ 惩罚 debuff（由惩罚配方触发）═══
+  // 饱食加速：饱食度下降加速（惩罚）
+  foodSpoil: {
+    id: 'foodSpoil',
+    name: '食物腐败',
+    description: '饱食度下降速度翻倍',
+    icon: '💀',
+    color: [80, 180, 80],
+  },
+  // 虚弱诅咒：拖拽阻力加重（惩罚）
+  weakness: {
+    id: 'weakness',
+    name: '虚弱诅咒',
+    description: '拖拽食物消耗加快',
+    icon: '⚡',
+    color: [150, 80, 200],
+  },
 };
 
 /**
@@ -201,6 +218,11 @@ export function getHungerDrainMultiplier() {
   // 诅咒增幅：加速
   if (hasBuff('cursedBoost')) {
     multiplier *= 2;
+  }
+
+  // 食物腐败：加速（惩罚）
+  if (hasBuff('foodSpoil')) {
+    multiplier *= 1.5;
   }
 
   return multiplier;

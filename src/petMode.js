@@ -13,7 +13,7 @@
  *   5. 左键拖拽怪兽 → 在桌面上移动位置
  */
 
-import { createMonster, updateMonsterPosition, getMonster, loadSavedMonsterType, setBaseY } from './monster.js';
+import { createMonster, updateMonsterPosition, getMonster, loadSavedMonsterType } from './monster.js';
 import { gameState, saveGame, loadGame, addScore, addJoy, adjustJoyByHunger, getJoyLevel, getJoyInfo } from './state.js';
 
 // ──────────────────────────────────────────────────
@@ -160,9 +160,9 @@ export function registerPetScene() {
     // 窗口 320x400，逻辑 1200x800
     // stretch 后水平缩放 320/1200=0.267，垂直缩放 400/800=0.5
     // 水平被压缩了 0.5/0.267 ≈ 1.875 倍
-    // 所以 camScale.x 要比 camScale.y 大约 1.875 倍来补偿
-    // camScale.y=2.2 让怪兽纵向大小合适，camScale.x≈2.2*1.65≈3.6 让横向不压缩
-    camScale(vec2(3.6, 2.2));
+    // 所以 camScale.x / camScale.y 需要为 1.875 来补偿
+    // camScale.y=2.2 让怪兽纵向大小合适，camScale.x=2.2*1.875≈4.125 → 取 4.1
+    camScale(vec2(4.1, 2.2));
     camPos(width() / 2, height() / 2 + 80);
 
     // 饱食度自然下降
@@ -383,8 +383,7 @@ function setupPetInteraction() {
           petDrag.lastWinY = pos.y;
           petDrag.initialized = true; // 标记已初始化
 
-          // 同步 baseY，避免弹回
-          setBaseY(petMonster ? petMonster.pos.y : height() / 2 + 80);
+          // 拖拽开始时不做任何 baseY 调整——怪兽在 canvas 内的逻辑坐标不变
         }).catch(() => {
           // 出错也标记为已初始化，使用备用值
           petDrag.initialized = true;
@@ -420,12 +419,7 @@ function onPetMouseMove(e) {
           petDrag.lastWinY = petDrag.pendingY;
           window.electronAPI.movePetWindow({ x: petDrag.pendingX, y: petDrag.pendingY });
 
-          // 同步更新 baseY，避免浮动动画导致位置弹回
-          // 怪兽在窗口中位于 canvas 中央偏下 (offsetY = 80)
-          const windowScreenTop = petDrag.pendingY;
-          const monsterScreenY = windowScreenTop + 200 + 80; // canvas高一半 + 偏移
-          const newBaseY = monsterScreenY; // Kaplay 坐标直接对应屏幕像素
-          setBaseY(newBaseY);
+          // 拖拽窗口时不调整 baseY——怪兽相对 canvas 的逻辑坐标不变
         }
       });
     }
@@ -477,11 +471,6 @@ function onPetMouseUp(e) {
       // 确保最终位置已发送
       if (window.electronAPI && window.electronAPI.movePetWindow) {
         window.electronAPI.movePetWindow({ x: petDrag.pendingX, y: petDrag.pendingY });
-
-        // 同步更新 baseY 到最终位置
-        const windowScreenTop = petDrag.pendingY;
-        const monsterScreenY = windowScreenTop + 200 + 80;
-        setBaseY(monsterScreenY);
       }
     }
     petDrag.active = false;

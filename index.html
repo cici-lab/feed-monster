@@ -250,6 +250,22 @@
       font-style: italic;
     }
 
+    /* 成就样式 */
+    #achievement-modal .modal-panel {
+      width: 500px;
+      height: 550px;
+    }
+    .achievement-progress {
+      color: #ffc864;
+      font-size: 12px;
+      margin-left: auto;
+      margin-right: 10px;
+    }
+    .achievement-list {
+      display: flex;
+      flex-direction: column;
+    }
+
     /* 滚动条样式 */
     .modal-body::-webkit-scrollbar,
     .enc-list::-webkit-scrollbar {
@@ -473,6 +489,20 @@
       </div>
       <div class="modal-body">
         <div class="recipe-list" id="recipe-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 成就弹窗 -->
+  <div id="achievement-modal" class="modal-overlay">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <span class="modal-title">🏆 成就</span>
+        <span class="achievement-progress" id="achievement-progress"></span>
+        <button class="modal-close" onclick="closeAchievementPanel()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="achievement-list" id="achievement-list"></div>
       </div>
     </div>
   </div>

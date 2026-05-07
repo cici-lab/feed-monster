@@ -97,9 +97,56 @@ function renderMonsterGrid() {
     
     card.addEventListener('click', () => selectMonster(id));
     card.addEventListener('mouseenter', () => showMonsterPreview(id));
+    card.addEventListener('mouseleave', () => {
+      // 鼠标离开时，恢复显示已选中的怪兽信息（或默认提示）
+      if (selectedMonsterId) {
+        updateMonsterInfo(selectedMonsterId);
+      } else {
+        updateMonsterInfo(null);
+      }
+    });
     
     grid.appendChild(card);
   });
+
+  // 添加"敬请期待"占位卡片
+  const placeholderCard = document.createElement('div');
+  placeholderCard.className = 'monster-card monster-card-coming-soon';
+  placeholderCard.style.cssText = `
+    opacity: 0.5;
+    cursor: default;
+    border-color: #3a3a3a;
+    background: linear-gradient(145deg, #1a1a2a, #151520);
+  `;
+  
+  placeholderCard.innerHTML = `
+    <div class="monster-card-preview" style="background: #1a1a2a; box-shadow: none;">
+      <div style="width: 85px; height: 85px; display: flex; align-items: center; justify-content: center;">
+        <span style="font-size: 40px; color: #555;">?</span>
+      </div>
+    </div>
+    <div class="monster-card-name" style="color: #555;">敬请期待</div>
+    <div class="monster-card-ability" style="color: #444;">更多怪兽即将到来...</div>
+  `;
+
+  placeholderCard.addEventListener('mouseenter', () => {
+    const nameEl = document.getElementById('monster-info-name');
+    const descEl = document.getElementById('monster-info-desc');
+    const statsEl = document.getElementById('monster-info-stats');
+    if (nameEl) nameEl.textContent = '🔮 更多怪兽即将到来';
+    if (descEl) descEl.textContent = '开发团队正在设计更多独特的怪兽伙伴，包括全新的外观、能力和交互方式。敬请关注后续更新！';
+    if (statsEl) statsEl.innerHTML = '<div style="color:#666;font-size:13px;">✨ 更多内容开发中...</div>';
+  });
+
+  placeholderCard.addEventListener('mouseleave', () => {
+    if (selectedMonsterId) {
+      updateMonsterInfo(selectedMonsterId);
+    } else {
+      updateMonsterInfo(null);
+    }
+  });
+
+  grid.appendChild(placeholderCard);
 }
 
 /**

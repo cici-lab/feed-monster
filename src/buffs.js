@@ -177,6 +177,12 @@ export function getScoreMultiplier() {
     multiplier *= 2;
   }
 
+  // 事件系统倍率
+  try {
+    if (window.__eventScoreMultiplier) multiplier *= 3;
+    if (window.__eventScoreHalved) multiplier *= 0.5;
+  } catch (e) {}
+
   return multiplier;
 }
 

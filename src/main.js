@@ -13,6 +13,7 @@ import { initConsoleControls, registerCraftTrigger, registerFullscreenToggle } f
 import { initMonsterSelectSystem, showMonsterSelect, hideMonsterSelect } from './monsterSelect.js';
 import { initCursorHealth, cleanupCursorHealth, resetCursorHealth, cursorState } from './cursorHealth.js';
 import { createBuffBar, updateBuffs, updateBuffBarDisplay, getFoodSpawnIntervalMultiplier, getHungerDrainMultiplier, shouldHealthDrain, clearAllBuffs } from './buffs.js';
+import { initEventSystem, updateEvents, resetEvents, getEventFoodSpeedMultiplier } from './events.js';
 // petMode 使用动态 import，避免其错误阻断主游戏模块链加载
 
 // 初始化 Kaplay 游戏引擎
@@ -149,6 +150,10 @@ scene('game', () => {
 
   // 重置 buff 系统
   clearAllBuffs();
+
+  // 重置事件系统
+  resetEvents();
+  initEventSystem();
   
   // 初始化鼠标光环系统
   const cursorHealth = initCursorHealth();
@@ -225,11 +230,14 @@ scene('game', () => {
   // 饱食度随时间减少（buff 影响下降速率）
   let hungerDrainTimer = 0;
 
-  // 主循环更新 buff、食物生成、饱食度
+  // 主循环更新 buff、食物生成、饱食度、事件
   onUpdate(() => {
     // 更新 buff 系统
     updateBuffs(dt());
     updateBuffBarDisplay();
+
+    // 更新随机事件系统
+    updateEvents(dt());
 
     // 食物生成（受 buff 影响）
     foodSpawnTimer += dt();
@@ -239,6 +247,12 @@ scene('game', () => {
       if (foodManager.getFoodCount() < 8) {
         createFood();
       }
+    }
+
+    // 事件食物加速（引力异常时额外生成）
+    const eventFoodSpeed = getEventFoodSpeedMultiplier();
+    if (eventFoodSpeed > 1 && foodManager.getFoodCount() < 12) {
+      createFood();
     }
 
     // 饱食度随时间减少（受 buff 影响）
